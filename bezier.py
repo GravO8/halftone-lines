@@ -39,13 +39,22 @@ def pascal_row(n, memo={}):
     
 
 class Polygon:
-    def __init__(self, N):
-        self.ts = [t/N for t in range(N+1)]
+    def __init__(self, y: int, N: int = 100):
+        self.ts     = [t/N for t in range(N+1)]
         self.points = []
+        self.y      = y
+        self.top    = []
+        self.bottom = []
 
-    def extend(self, xys):
-        bezier = make_bezier(xys)
+    def extend(self, xys: list):
+        xys     = [(e[0],e[1]+self.y) for e in xys]
+        bezier  = make_bezier(xys)
         self.points.extend(bezier(self.ts))
         
-    def draw(self, draw, color = "black"):
+    def extend_top(self, point: tuple):
+        self.top.append((point[0],point[1]+self.y))
+    def extend_bottom(self, point: tuple):
+        self.bottom.append((point[0],point[1]+self.y))
+        
+    def draw(self, draw, color: str = "black"):
         draw.polygon(self.points, fill = color)
