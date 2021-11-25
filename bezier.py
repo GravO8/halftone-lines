@@ -39,7 +39,7 @@ def pascal_row(n, memo={}):
     
 
 class Polygon:
-    def __init__(self, y: int, N: int = 100):
+    def __init__(self, y: int, N: int = 10):
         self.ts     = [t/N for t in range(N+1)]
         self.points = []
         self.y      = y
