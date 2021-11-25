@@ -49,6 +49,8 @@ class Polygon:
     def extend(self, xys: list):
         xys     = [(e[0],e[1]+self.y) for e in xys]
         bezier  = make_bezier(xys)
+        print(bezier(self.ts))
+        1/0
         self.points.extend(bezier(self.ts))
         
     def extend_top(self, point: tuple):

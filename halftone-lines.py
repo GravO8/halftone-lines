@@ -4,26 +4,29 @@ from bezier import Polygon
 import numpy as np
 
 def get_intensity(square):
-    return 1.5*(1-square.mean()/255)
+    return 1-square.mean()/255
     
 
 if __name__ == "__main__":
-    kernel_s        = 2
-    side            = 20    # size of the side of each square in the output img
+    kernel_s        = 23
+    side            = 40    # size of the side of each square in the output img
     bg_color        = (255, 255, 255)
     fg_color        = (0, 0, 0)
-    img_name        = "girl.jpg"
+    img_name        = "5.jpg"
     img 		    = cv2.imread(img_name, cv2.IMREAD_GRAYSCALE)
     height, width   = img.shape
     n_row           = width // kernel_s  # number of squares in the output img per row
     n_col           = height // kernel_s # number of squares in the output img per column
     img_out         = Image.new("RGB", (n_row*side, n_col*side), bg_color)
     draw            = ImageDraw.Draw(img_out)
+    print(height, width)
+    print(n_row, n_col, n_row*n_col)
     
     for y in range(n_col):
         line      = Polygon(y*side)
         intensity = get_intensity( img[y*kernel_s:(y+1)*kernel_s, 0:kernel_s] )
         height    = intensity*side
+        print(f"y[{y*kernel_s}:{(y+1)*kernel_s}], x[{0}:{kernel_s}], {height}")
         y_top     = (side-height)//2
         y_bot     = height + y_top
         line.extend([(0,y_bot), (0,y_top)])
@@ -33,6 +36,7 @@ if __name__ == "__main__":
         line.extend_top((side//2,y_top))
         for x in range(1,n_row-1):
             intensity   = get_intensity( img[y*kernel_s:(y+1)*kernel_s, x*kernel_s:(x+1)*kernel_s] )
+            print(f"y[{y*kernel_s}:{(y+1)*kernel_s}], x[{x*kernel_s}:{(x+1)*kernel_s}], {height}")
             # print(x,y, intensity)
             height      = intensity*side
             y_top     = (side-height)//2
@@ -41,6 +45,7 @@ if __name__ == "__main__":
             line.extend_top((side//2 + x*side,y_top))
         x = n_row-1
         intensity   = get_intensity( img[y*kernel_s:(y+1)*kernel_s, x*kernel_s:(x+1)*kernel_s] )
+        print(f"y[{y*kernel_s}:{(y+1)*kernel_s}], x[{x*kernel_s}:{(x+1)*kernel_s}], {height}")
         height      = intensity*side
         y_top     = (side-height)//2
         y_bot     = height + y_top
