@@ -8,7 +8,7 @@ def get_intensity(square):
     
 
 if __name__ == "__main__":
-    kernel_s        = 23
+    kernel_s        = 18
     side            = 40    # size of the side of each square in the output img
     bg_color        = (255, 255, 255)
     fg_color        = (0, 0, 0)
@@ -19,15 +19,15 @@ if __name__ == "__main__":
     n_col           = height // kernel_s # number of squares in the output img per column
     img_out         = Image.new("RGB", (n_row*side, n_col*side), bg_color)
     draw            = ImageDraw.Draw(img_out)
-    print(height, width)
-    print(n_row, n_col, n_row*n_col)
+    print(f"original size: {height}x{width}")
+    print(f"new size: {n_col*side}x{n_row*side}")
     
     for y in range(n_col):
-        line = SigmoidPolygon(y*side, side, slope = 0.0000001, N = 20)
-        for x in range(1,n_row-1):
+        line = SigmoidPolygon(y*side, side, alpha = 5, N = 2)
+        for x in range(n_row):
             intensity = get_intensity( img[y*kernel_s:(y+1)*kernel_s, x*kernel_s:(x+1)*kernel_s] )
             height    = intensity*side
-            line.height(x*side, height)
+            line.height(x, height)
         line.draw(draw)
-        # break
-    img_out.save("out.png")
+    # img_out = img_out.resize((n_row*side//2, n_col*side//2), resample = Image.ANTIALIAS)
+    img_out.save(img_name+"-out.png")
