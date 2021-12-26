@@ -71,24 +71,17 @@ class Scan:
         return sel
         
     def scan(self):
-        self.quadrant(np.array([[0, self.kernel_s,  self.kernel_s,  0], 
-                                [0, 0,             -self.kernel_s,  -self.kernel_s]]),
-                      1, -1)
-        self.quadrant(np.array([[0, -self.kernel_s,-self.kernel_s,  0], 
-                                [0, 0,             -self.kernel_s,  -self.kernel_s]]),
-                     -1, -1)
-        self.quadrant(np.array([[0, -self.kernel_s,-self.kernel_s,  0], 
-                                [0, 0,              self.kernel_s,  self.kernel_s]]),
-                     -1, 1)
-        self.quadrant(np.array([[0, 0,              self.kernel_s,  self.kernel_s], 
-                                [0, self.kernel_s,  self.kernel_s,  0]]),
-                      1, 1)
+        self.quadrant(1, -1)
+        self.quadrant(-1, -1)
+        self.quadrant(-1, 1)
+        self.quadrant(1, 1)
 
-    def quadrant(self, vertices, h_sign, v_sign):
+    def quadrant(self, h_sign, v_sign):
         r               = rotation_matrix(self.angle)
         move_h_r        = r.dot( np.array([self.kernel_s,0]) ) # move horizontally rotated
         move_v_r        = r.dot( np.array([0,self.kernel_s]) ) # move vertically rotated
-        vertices        = 
+        vertices        = np.array([[0, 0,                      h_sign*self.kernel_s,  h_sign*self.kernel_s], 
+                                    [0, v_sign*self.kernel_s,   v_sign*self.kernel_s,  0]])
         vertices_r      = r.dot(vertices).T + np.array([self.x_center, self.y_center])
         for y in range(int(1e10)):
             for x in range(int(1e10)):
@@ -107,7 +100,7 @@ if __name__ == "__main__":
     height, width   = img.shape
     angle           = 20
     scan            = Scan(img, kernel_s, angle)
-    scan.fourth_quadrant()
+    scan.scan()
     
     
     
