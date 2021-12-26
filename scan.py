@@ -75,6 +75,15 @@ class Scan:
         self.quadrant(-1, -1)
         self.quadrant(-1, 1)
         self.quadrant(1, 1)
+        
+    def add_to_canvas(x, y, intensity):
+        if y in self.canvas_r:
+            self.canvas_r[y]["x"].append(x)
+            self.canvas_r[y]["intensity"].append(intensity)
+            .append((x, intensity))
+        else:
+            self.canvas_r[y]["x"] = [x]
+            self.canvas_r[y]["intensity"] = [intensity]
 
     def quadrant(self, h_sign, v_sign):
         r               = rotation_matrix(self.angle)
@@ -88,9 +97,16 @@ class Scan:
                 current = vertices_r + x*h_sign*move_h_r + y*v_sign*move_v_r
                 sel     = self.select_square(current).T
                 if not np.any(sel): break
-                self.canvas_r[( self.x_center//2 + x*h_sign*kernel_s,
-                                self.y_center//2 + y*v_sign*kernel_s)] = get_intensity(self.img[sel])
+                self.add_to_canvas( self.x_center//2 + x*h_sign*kernel_s,
+                                    self.y_center//2 + y*v_sign*kernel_s,
+                                    get_intensity(self.img[sel]))
             if x == 0: break
+            
+    def draw_canvas(self):
+        for y in canvas_r:
+            x = np.array(canvas_r[y]["x"])
+            intensities = np.array(canvas_r[y]["intensity"])
+            
 
 if __name__ == "__main__":
     kernel_s        = 99
