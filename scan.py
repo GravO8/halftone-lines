@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from sigmoid import SigmoidPolygon
 
 def get_intensity(square):
     return 1-square.mean()/255
@@ -49,7 +50,7 @@ def make_conds(edges):
     
 
 class Scan:
-    def __init__(self, img, kernel_s, angle):
+    def __init__(self, img, kernel_s, side, angle):
         self.img        = img
         self.height     = self.img.shape[0]
         self.width      = self.img.shape[1]
@@ -57,6 +58,7 @@ class Scan:
         self.y_center   = self.height//2
         self.kernel_s   = kernel_s
         self.angle      = angle
+        self.side       = side
         self.selection  = np.zeros((self.width,self.height), dtype = bool)
         self.canvas_r   = {} # canvas rotated
     
@@ -76,14 +78,14 @@ class Scan:
         self.quadrant(-1, 1)
         self.quadrant(1, 1)
         
-    def add_to_canvas(x, y, intensity):
+    def add_to_canvas(self, x, y, intensity):
+        h = self.side * intensity
         if y in self.canvas_r:
             self.canvas_r[y]["x"].append(x)
-            self.canvas_r[y]["intensity"].append(intensity)
-            .append((x, intensity))
+            self.canvas_r[y]["height"].append(h)
         else:
             self.canvas_r[y]["x"] = [x]
-            self.canvas_r[y]["intensity"] = [intensity]
+            self.canvas_r[y]["height"] = [h]
 
     def quadrant(self, h_sign, v_sign):
         r               = rotation_matrix(self.angle)
@@ -103,9 +105,16 @@ class Scan:
             if x == 0: break
             
     def draw_canvas(self):
+        r = rotation_matrix(-self.angle)
         for y in canvas_r:
-            x = np.array(canvas_r[y]["x"])
-            intensities = np.array(canvas_r[y]["intensity"])
+            line    = SigmoidPolygon(y*self.side, self.side, alpha = 5, N = 2)
+            x       = np.array(canvas_r[y]["x"])
+            i_sort  = np.argsort(x)
+            x       = x[i_sort]
+            height  = np.array(canvas_r[y]["height"])[i_sort]
+            for i in range(len(x)):
+                line.height(x[i], height[i])
+            line.points = [r.dot(np.array(p)) for p in line.points]
             
 
 if __name__ == "__main__":
