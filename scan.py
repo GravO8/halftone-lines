@@ -1,6 +1,9 @@
 import cv2
 import numpy as np
 
+def get_intensity(square):
+    return 1-square.mean()/255
+
 def rotation_matrix(angle):
     angle = np.deg2rad(angle)
     return np.array([[np.cos(angle),-np.sin(angle)],[np.sin(angle),np.cos(angle)]])
@@ -55,32 +58,46 @@ class Scan:
         self.kernel_s   = kernel_s
         self.angle      = angle
         self.selection  = np.zeros((self.width,self.height), dtype = bool)
+        self.canvas_r   = {} # canvas rotated
     
     def select_square(self, vertices):
         edges                       = make_edges(vertices)
         cond0, cond1                = make_conds(edges)
         sel                         = np.array(self.selection, copy = True)
         min_x, min_y, max_x, max_y  = make_bbox(vertices)
-        print(self.width)
-        print(self.height)
-        print(sel.shape)
         for x in range(max(0,min_x), min(max_x,self.width)):
             for y in range(max(0,min_y), min(max_y,self.height)):
                 sel[x][y] = cond0(x,y) and cond1(x,y)
         return sel
+        
+    def scan(self):
+        self.quadrant(np.array([[0, self.kernel_s,  self.kernel_s,  0], 
+                                [0, 0,             -self.kernel_s,  -self.kernel_s]]),
+                      1, -1)
+        self.quadrant(np.array([[0, -self.kernel_s,-self.kernel_s,  0], 
+                                [0, 0,             -self.kernel_s,  -self.kernel_s]]),
+                     -1, -1)
+        self.quadrant(np.array([[0, -self.kernel_s,-self.kernel_s,  0], 
+                                [0, 0,              self.kernel_s,  self.kernel_s]]),
+                     -1, 1)
+        self.quadrant(np.array([[0, 0,              self.kernel_s,  self.kernel_s], 
+                                [0, self.kernel_s,  self.kernel_s,  0]]),
+                      1, 1)
 
-    def third_quadrant(self):
+    def quadrant(self, vertices, h_sign, v_sign):
         r               = rotation_matrix(self.angle)
-        vertices        = np.array([[0, 0,              self.kernel_s,  self.kernel_s], 
-                                    [0, self.kernel_s,  self.kernel_s,  0]])
+        move_h_r        = r.dot( np.array([self.kernel_s,0]) ) # move horizontally rotated
+        move_v_r        = r.dot( np.array([0,self.kernel_s]) ) # move vertically rotated
+        vertices        = 
         vertices_r      = r.dot(vertices).T + np.array([self.x_center, self.y_center])
-        # move_right      = np.array([self.kernel_s,0])
-        # move_up         = np.array([0,self.kernel_s])
-        # move_right_r    = move_right.dot(r)
-        # move_up_r       = move_up.dot(r)
-        sel             = self.select_square(vertices_r).T
-        self.img[sel]   = 0
-        cv2.imwrite("sapo.png", img)
+        for y in range(int(1e10)):
+            for x in range(int(1e10)):
+                current = vertices_r + x*h_sign*move_h_r + y*v_sign*move_v_r
+                sel     = self.select_square(current).T
+                if not np.any(sel): break
+                self.canvas_r[( self.x_center//2 + x*h_sign*kernel_s,
+                                self.y_center//2 + y*v_sign*kernel_s)] = get_intensity(self.img[sel])
+            if x == 0: break
 
 if __name__ == "__main__":
     kernel_s        = 99
@@ -90,7 +107,7 @@ if __name__ == "__main__":
     height, width   = img.shape
     angle           = 20
     scan            = Scan(img, kernel_s, angle)
-    scan.third_quadrant()
+    scan.fourth_quadrant()
     
     
     
