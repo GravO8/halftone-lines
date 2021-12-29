@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from PIL import Image, ImageDraw
 from sigmoid import SigmoidPolygon
 
 def get_intensity(square):
@@ -10,7 +11,7 @@ def rotation_matrix(angle):
     return np.array([[np.cos(angle),-np.sin(angle)],[np.sin(angle),np.cos(angle)]])
     
 def make_edge(a, b):
-    slope       = (a[1]-b[1])/(a[0]-b[0])
+    slope       = (a[1]-b[1])/(a[0]-b[0]+1e-8)
     intercept   = a[1] - slope*a[0]
     return slope, intercept
     
@@ -56,8 +57,9 @@ class Scan:
         self.width      = self.img.shape[1]
         self.x_center   = self.width//2
         self.y_center   = self.height//2
+        self.r          = rotation_matrix(angle)
         self.kernel_s   = kernel_s
-        self.angle      = angle
+        # self.angle      = angle
         self.side       = side
         self.selection  = np.zeros((self.width,self.height), dtype = bool)
         self.canvas_r   = {} # canvas rotated
@@ -84,37 +86,43 @@ class Scan:
             self.canvas_r[y]["x"].append(x)
             self.canvas_r[y]["height"].append(h)
         else:
+            self.canvas_r[y] = {}
             self.canvas_r[y]["x"] = [x]
             self.canvas_r[y]["height"] = [h]
 
     def quadrant(self, h_sign, v_sign):
-        r               = rotation_matrix(self.angle)
-        move_h_r        = r.dot( np.array([self.kernel_s,0]) ) # move horizontally rotated
-        move_v_r        = r.dot( np.array([0,self.kernel_s]) ) # move vertically rotated
+        move_h_r        = self.r.dot( np.array([self.kernel_s,0]) ) # move horizontally rotated
+        move_v_r        = self.r.dot( np.array([0,self.kernel_s]) ) # move vertically rotated
         vertices        = np.array([[0, 0,                      h_sign*self.kernel_s,  h_sign*self.kernel_s], 
                                     [0, v_sign*self.kernel_s,   v_sign*self.kernel_s,  0]])
-        vertices_r      = r.dot(vertices).T + np.array([self.x_center, self.y_center])
+        vertices_r      = self.r.dot(vertices).T + np.array([self.x_center, self.y_center])
         for y in range(int(1e10)):
             for x in range(int(1e10)):
                 current = vertices_r + x*h_sign*move_h_r + y*v_sign*move_v_r
                 sel     = self.select_square(current).T
                 if not np.any(sel): break
-                self.add_to_canvas( self.x_center//2 + x*h_sign*kernel_s,
-                                    self.y_center//2 + y*v_sign*kernel_s,
+                self.add_to_canvas( h_sign*(self.side/2 + x*self.side),
+                                    v_sign*(self.side/2 + y*self.side),
                                     get_intensity(self.img[sel]))
             if x == 0: break
             
     def draw_canvas(self):
-        r = rotation_matrix(-self.angle)
-        for y in canvas_r:
+        bg_color    = (255, 255, 255)
+        fg_color    = (0, 0, 0)
+        img_out     = Image.new("RGB", (10000, 10000), bg_color)
+        draw        = ImageDraw.Draw(img_out)
+        for y in self.canvas_r:
             line    = SigmoidPolygon(y*self.side, self.side, alpha = 5, N = 2)
-            x       = np.array(canvas_r[y]["x"])
+            x       = np.array(self.canvas_r[y]["x"])
             i_sort  = np.argsort(x)
             x       = x[i_sort]
-            height  = np.array(canvas_r[y]["height"])[i_sort]
+            height  = np.array(self.canvas_r[y]["height"])[i_sort]
             for i in range(len(x)):
                 line.height(x[i], height[i])
-            line.points = [r.dot(np.array(p)) for p in line.points]
+            # for i in range(len(line.points)):
+                # line.points[i] = tuple(self.r.dot(line.points[i]))
+            line.draw(draw)
+        img_out.save("5-out.png")
             
 
 if __name__ == "__main__":
@@ -124,8 +132,9 @@ if __name__ == "__main__":
     img 		    = cv2.imread(img_name, cv2.IMREAD_GRAYSCALE)
     height, width   = img.shape
     angle           = 20
-    scan            = Scan(img, kernel_s, angle)
+    scan            = Scan(img, kernel_s, 10, angle)
     scan.scan()
+    scan.draw_canvas()
     
     
     
