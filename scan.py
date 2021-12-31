@@ -49,6 +49,11 @@ def make_conds(edges):
     cond1       = lambda x,y: slope1*x + min(b21,b31) <= y <= slope1*x + max(b21,b31)
     return cond0, cond1
     
+def lines_intersect(line1, line2):
+    if line1[0] == line2[0]: return False # parallel lines
+    x = (line2[1]-line1[1])/(line1[0]-line2[0])
+    y = line1[0]*x + line1[1]
+    return x,y
 
 class Scan:
     def __init__(self, img, kernel_s, side, angle):
@@ -59,10 +64,14 @@ class Scan:
         self.y_center   = self.height//2
         self.r          = rotation_matrix(angle)
         self.kernel_s   = kernel_s
-        # self.angle      = angle
+        self.angle      = angle
         self.side       = side
         self.selection  = np.zeros((self.width,self.height), dtype = bool)
         self.canvas_r   = {} # canvas rotated
+        self.color      = 255
+        self.c          = 0
+        self.diagonal1  = make_edge((0,0),(self.width,self.height))
+        self.diagonal2  = make_edge((self.width,0),(0,self.height))
     
     def select_square(self, vertices):
         edges                       = make_edges(vertices)
@@ -72,13 +81,14 @@ class Scan:
         for x in range(max(0,min_x), min(max_x,self.width)):
             for y in range(max(0,min_y), min(max_y,self.height)):
                 sel[x][y] = cond0(x,y) and cond1(x,y)
-        return sel
+        return sel.T, edges[-1]
         
     def scan(self):
         self.quadrant(1, -1)
         self.quadrant(-1, -1)
         self.quadrant(-1, 1)
         self.quadrant(1, 1)
+        cv2.imwrite("sapo.png", self.img)
         
     def add_to_canvas(self, x, y, intensity):
         h = self.side * intensity
@@ -89,6 +99,9 @@ class Scan:
             self.canvas_r[y] = {}
             self.canvas_r[y]["x"] = [x]
             self.canvas_r[y]["height"] = [h]
+    
+    def out_of_bounds(self, point):
+        return (point[0] < 0) or (point[0] > self.width) or (point[1] < 0) or (point[1] > self.height)
 
     def quadrant(self, h_sign, v_sign):
         move_h_r        = self.r.dot( np.array([self.kernel_s,0]) ) # move horizontally rotated
@@ -99,11 +112,20 @@ class Scan:
         for y in range(int(1e10)):
             for x in range(int(1e10)):
                 current = vertices_r + x*h_sign*move_h_r + y*v_sign*move_v_r
-                sel     = self.select_square(current).T
-                if not np.any(sel): break
+                sel, slide_line = self.select_square(current)
+                if not np.any(sel):
+                    i1 = lines_intersect(self.diagonal1, slide_line)
+                    i2 = lines_intersect(self.diagonal2, slide_line)
+                    if( (i1 and not self.out_of_bounds(i1) and i1[0]*slide_line[0]+slide_line[1] > h_sign*current[0][0])
+                     or (i2 and not self.out_of_bounds(i2) and i2[0]*slide_line[0]+slide_line[1] > h_sign*current[0][0])):
+                        continue
+                    else: break
                 self.add_to_canvas( h_sign*(self.side/2 + x*self.side),
                                     v_sign*(self.side/2 + y*self.side),
                                     get_intensity(self.img[sel]))
+                self.img[sel] = self.color
+                self.color = (50 if self.c%2==0 else 20)+[50,100][(h_sign+1)//2]+[50,100][(v_sign+1)//2]
+                self.c += 1
             if x == 0: break
             
     def draw_canvas(self):
@@ -113,6 +135,7 @@ class Scan:
         draw        = ImageDraw.Draw(img_out)
         self.canvas_r = dict(sorted(self.canvas_r.items()))
         c = 0
+        ro = rotation_matrix(-self.angle)
         for y in self.canvas_r:
             line    = SigmoidPolygon(c*self.side, self.side, alpha = 1, N = 2)
             x       = np.array(self.canvas_r[y]["x"])
@@ -123,15 +146,15 @@ class Scan:
             for i in range(len(x)):
                 line.height(i, height[i])
             line.compute_points()
-            print(y, len(x))
-            print(x)
-            print(height)
-            print(line.points)
-            print()
-            print("------------------------------------------------")
-            print()
-            # for i in range(len(line.points)):
-                # line.points[i] = tuple(self.r.dot(line.points[i]))
+            # print(y, len(x))
+            # print(x)
+            # print(height)
+            # print(line.points)
+            # print()
+            # print("------------------------------------------------")
+            # print()
+            for i in range(len(line.points)):
+                line.points[i] = tuple(self.r.dot(line.points[i])+[-min(x),0])
             line.draw(draw)
             c += 1
         img_out.save("5-out.png")
