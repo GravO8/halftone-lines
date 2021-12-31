@@ -10,22 +10,17 @@ def rotation_matrix(angle):
     angle = np.deg2rad(angle)
     return np.array([[np.cos(angle),-np.sin(angle)],[np.sin(angle),np.cos(angle)]])
     
-def make_edge(a, b):
-    slope       = (a[1]-b[1])/(a[0]-b[0]+1e-8)
-    intercept   = a[1] - slope*a[0]
-    return slope, intercept
-    
 def make_edges(vertices):
     '''
     Outputs the four edges of the tilted square. Two parallel sides at the time.
     '''
     edges = []
-    edges.append( make_edge(vertices[0],vertices[1]) )
-    edges.append( make_edge(vertices[2],vertices[3]) )
-    edges.append( make_edge(vertices[1],vertices[2]) )
-    edges.append( make_edge(vertices[-1],vertices[0]) )
-    assert edges[0][0]-edges[1][0] < 1e-5, "first two edges aren't parallel"
-    assert edges[2][0]-edges[3][0] < 1e-5, "last two edges aren't parallel"
+    edges.append( StraightLine(vertices[0],vertices[1]) )
+    edges.append( StraightLine(vertices[2],vertices[3]) )
+    edges.append( StraightLine(vertices[1],vertices[2]) )
+    edges.append( StraightLine(vertices[-1],vertices[0]) )
+    assert edges[0].is_parallel(edges[1]), "first two edges aren't parallel"
+    assert edges[2].is_parallel(edges[3]), "last two edges aren't parallel"
     return edges
 
 def make_bbox(vertices):
@@ -41,19 +36,29 @@ def make_conds(edges):
     '''
     Creates the conditions that checks if a point is whithin the tilted square
     '''
-    b01, b11    = edges[0][1], edges[1][1]
-    b21, b31    = edges[2][1], edges[3][1]
-    slope0      = edges[0][0]
-    slope1      = edges[2][0]
+    b01, b11    = edges[0].intercept, edges[1].intercept
+    b21, b31    = edges[2].intercept, edges[3].intercept
+    slope0      = edges[0].slope
+    slope1      = edges[2].slope
     cond0       = lambda x,y: slope0*x + min(b01,b11) <= y <= slope0*x + max(b01,b11)
     cond1       = lambda x,y: slope1*x + min(b21,b31) <= y <= slope1*x + max(b21,b31)
     return cond0, cond1
     
-def lines_intersect(line1, line2):
-    if line1[0] == line2[0]: return False # parallel lines
-    x = (line2[1]-line1[1])/(line1[0]-line2[0])
-    y = line1[0]*x + line1[1]
-    return x,y
+class StraightLine:
+    def __init__(self, a, b):
+        self.slope      = (a[1]-b[1])/(a[0]-b[0]+1e-8)
+        self.intercept  = a[1] - self.slope*a[0]
+    def is_parallel(self, line, precision = 1e-5):
+        return abs(self.slope - line.slope) < precision
+    def at(self, x):
+        return self.slope*x + self.intercept
+    def intersection(self, line):
+        if self.is_parallel(line): return False
+        x = (line.intercept-self.intercept)/(self.slope-line.slope)
+        y = self.at(x)
+        return x,y
+    def __repr__(self):
+        return f"y = {round(self.slope,2)}x + {round(self.intercept,2)}"
 
 class Scan:
     def __init__(self, img, kernel_s, side, angle):
@@ -70,8 +75,8 @@ class Scan:
         self.canvas_r   = {} # canvas rotated
         self.color      = 255
         self.c          = 0
-        self.diagonal1  = make_edge((0,0),(self.width,self.height))
-        self.diagonal2  = make_edge((self.width,0),(0,self.height))
+        self.diagonal1  = StraightLine((0,0),(self.width,self.height))
+        self.diagonal2  = StraightLine((self.width,0),(0,self.height))
     
     def select_square(self, vertices):
         edges                       = make_edges(vertices)
@@ -114,10 +119,10 @@ class Scan:
                 current = vertices_r + x*h_sign*move_h_r + y*v_sign*move_v_r
                 sel, slide_line = self.select_square(current)
                 if not np.any(sel):
-                    i1 = lines_intersect(self.diagonal1, slide_line)
-                    i2 = lines_intersect(self.diagonal2, slide_line)
-                    if( (i1 and not self.out_of_bounds(i1) and i1[0]*slide_line[0]+slide_line[1] > h_sign*current[0][0])
-                     or (i2 and not self.out_of_bounds(i2) and i2[0]*slide_line[0]+slide_line[1] > h_sign*current[0][0])):
+                    i1 = self.diagonal1.intersection(slide_line)
+                    i2 = self.diagonal2.intersection(slide_line)
+                    if( (i1 and not self.out_of_bounds(i1) and slide_line.at(i1[0]) > h_sign*current[0][0])
+                     or (i2 and not self.out_of_bounds(i2) and slide_line.at(i2[0]) > h_sign*current[0][0])):
                         continue
                     else: break
                 self.add_to_canvas( h_sign*(self.side/2 + x*self.side),
