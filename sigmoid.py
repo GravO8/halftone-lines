@@ -1,7 +1,7 @@
 import numpy as np
 
 class SigmoidPolygon:
-    def __init__(self, y: int, side: int, alpha: float = 1., N: int = 10):
+    def __init__(self, y: int, side: int, alpha: float = 1., N: int = 2):
         self.N              = N
         self.y              = y
         self.side           = side
@@ -18,6 +18,7 @@ class SigmoidPolygon:
         return [(x,sigmoid(x)) for x in xs]
 
     def height(self, x, height):
+        assert height <= self.side
         y_top  = (self.side-height)/2
         y_bot  = height + y_top
         self.top_line.append((x*self.side+self.side/2,y_top+self.y-self.alpha))

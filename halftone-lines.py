@@ -23,7 +23,7 @@ if __name__ == "__main__":
     print(f"new size: {n_col*side}x{n_row*side}")
     
     for y in range(n_col):
-        line = SigmoidPolygon(y*side, side, alpha = 5, N = 2)
+        line = SigmoidPolygon(y*side, side, alpha = 2, N = 2)
         for x in range(n_row):
             intensity = get_intensity( img[y*kernel_s:(y+1)*kernel_s, x*kernel_s:(x+1)*kernel_s] )
             height    = intensity*side

@@ -111,28 +111,41 @@ class Scan:
         fg_color    = (0, 0, 0)
         img_out     = Image.new("RGB", (10000, 10000), bg_color)
         draw        = ImageDraw.Draw(img_out)
+        self.canvas_r = dict(sorted(self.canvas_r.items()))
+        c = 0
         for y in self.canvas_r:
-            line    = SigmoidPolygon(y*self.side, self.side, alpha = 5, N = 2)
+            line    = SigmoidPolygon(c*self.side, self.side, alpha = 1, N = 2)
             x       = np.array(self.canvas_r[y]["x"])
             i_sort  = np.argsort(x)
             x       = x[i_sort]
             height  = np.array(self.canvas_r[y]["height"])[i_sort]
+            # min_ = min(x)
             for i in range(len(x)):
-                line.height(x[i], height[i])
+                line.height(i, height[i])
+            line.compute_points()
+            print(y, len(x))
+            print(x)
+            print(height)
+            print(line.points)
+            print()
+            print("------------------------------------------------")
+            print()
             # for i in range(len(line.points)):
                 # line.points[i] = tuple(self.r.dot(line.points[i]))
             line.draw(draw)
+            c += 1
         img_out.save("5-out.png")
             
 
 if __name__ == "__main__":
-    kernel_s        = 99
+    kernel_s        = 23
     side            = 40    # size of the side of each square in the output img
+    angle           = 45
+    alpha           = 2
     img_name        = "5.jpg"
     img 		    = cv2.imread(img_name, cv2.IMREAD_GRAYSCALE)
     height, width   = img.shape
-    angle           = 20
-    scan            = Scan(img, kernel_s, 10, angle)
+    scan            = Scan(img, kernel_s, side, angle)
     scan.scan()
     scan.draw_canvas()
     
