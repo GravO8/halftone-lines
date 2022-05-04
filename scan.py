@@ -1,7 +1,9 @@
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw
+from line import StraightLine
 from sigmoid import SigmoidPolygon
+
 
 def get_intensity(square):
     return 1-square.mean()/255
@@ -43,22 +45,6 @@ def make_conds(edges):
     cond0       = lambda x,y: slope0*x + min(b01,b11) <= y <= slope0*x + max(b01,b11)
     cond1       = lambda x,y: slope1*x + min(b21,b31) <= y <= slope1*x + max(b21,b31)
     return cond0, cond1
-    
-class StraightLine:
-    def __init__(self, a, b):
-        self.slope      = (a[1]-b[1])/(a[0]-b[0]+1e-8)
-        self.intercept  = a[1] - self.slope*a[0]
-    def is_parallel(self, line, precision = 1e-5):
-        return abs(self.slope - line.slope) < precision
-    def at(self, x):
-        return self.slope*x + self.intercept
-    def intersection(self, line):
-        if self.is_parallel(line): return False
-        x = (line.intercept-self.intercept)/(self.slope-line.slope)
-        y = self.at(x)
-        return x,y
-    def __repr__(self):
-        return f"y = {round(self.slope,2)}x + {round(self.intercept,2)}"
 
 class Scan:
     def __init__(self, img, kernel_s, side, angle):
@@ -71,6 +57,7 @@ class Scan:
         self.kernel_s   = kernel_s
         self.angle      = angle
         self.side       = side
+        self.zoom_ratio = self.side/self.kernel_s
         self.selection  = np.zeros((self.width,self.height), dtype = bool)
         self.canvas_r   = {} # canvas rotated
         self.color      = 255
@@ -122,7 +109,7 @@ class Scan:
                     i1 = self.diagonal1.intersection(slide_line)
                     i2 = self.diagonal2.intersection(slide_line)
                     if( (i1 and not self.out_of_bounds(i1) and slide_line.at(i1[0]) > h_sign*current[0][0])
-                     or (i2 and not self.out_of_bounds(i2) and slide_line.at(i2[0]) > h_sign*current[0][0])):
+                     or (i2 and not self.out_of_bounds(i2) and slide_line.at(i2[0]) > h_sign*current[0][0]) ):
                         continue
                     else: break
                 self.add_to_canvas( h_sign*(self.side/2 + x*self.side),
@@ -136,18 +123,18 @@ class Scan:
     def draw_canvas(self):
         bg_color    = (255, 255, 255)
         fg_color    = (0, 0, 0)
-        img_out     = Image.new("RGB", (10000, 10000), bg_color)
+        img_out     = Image.new("RGB", (self.width*self.zoom_ratio, self.height*self.zoom_ratio), bg_color)
         draw        = ImageDraw.Draw(img_out)
-        self.canvas_r = dict(sorted(self.canvas_r.items()))
+        self.canvas_r = dict(sorted(self.canvas_r.items())) # sorts the dictionary by key, i.e. by y
         c = 0
         ro = rotation_matrix(-self.angle)
         for y in self.canvas_r:
             line    = SigmoidPolygon(c*self.side, self.side, alpha = 1, N = 2)
             x       = np.array(self.canvas_r[y]["x"])
+            # sort the abscissas and the heights
             i_sort  = np.argsort(x)
             x       = x[i_sort]
             height  = np.array(self.canvas_r[y]["height"])[i_sort]
-            # min_ = min(x)
             for i in range(len(x)):
                 line.height(i, height[i])
             line.compute_points()
@@ -159,6 +146,12 @@ class Scan:
             # print("------------------------------------------------")
             # print()
             for i in range(len(line.points)):
+                # 1. mover o ponto em que as linhas horizontais (SigmoidPolygon) cruzam 
+                #    perpendicularmente a linha imaginária dos quadrantes para o centro
+                #    do novo canvas. Aplicar essa translação a todos os pontos do poligono
+                # 2. rotate points
+                # 3. translação de volta dada pelo ponto da etapa 1 de todos os pontos 
+                #    do poligono 
                 line.points[i] = tuple(self.r.dot(line.points[i])+[-min(x),0])
             line.draw(draw)
             c += 1
