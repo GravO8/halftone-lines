@@ -2,6 +2,13 @@ import numpy as np
 
 class SigmoidPolygon:
     def __init__(self, y: int, side: int, alpha: float = 1., N: int = 2):
+        '''
+        y     - y position of the polygon
+        side  - maximum height of the polygon
+        alpha - controls how width of the sigmoid. Higher alphas mean wider sigmoids
+        N     - number of points to interpolate the sigmoid line
+        Points can be added with `height` method
+        '''
         self.N              = N
         self.y              = y
         self.side           = side
@@ -18,6 +25,11 @@ class SigmoidPolygon:
         return [(x,sigmoid(x)) for x in xs]
 
     def height(self, x, height):
+        '''
+        Function that actually populates the polygon
+        x      - position of the new point
+        height - height of the new point, how wide it should be
+        '''
         assert height <= self.side
         y_top  = (self.side-height)/2
         y_bot  = height + y_top
@@ -25,6 +37,11 @@ class SigmoidPolygon:
         self.bottom_line.append((x*self.side+self.side/2,y_bot+self.y+self.alpha))
 
     def compute_points(self):
+        '''
+        After adding all the points using various calls to the `height` method, 
+        the `compute_points` method should be called to interpolate the nice
+        sigmoid polygon between the points 
+        '''
         first_y_top     = self.top_line[0][1]
         first_y_bottom  = self.bottom_line[0][1]
         last_y_top      = self.top_line[-1][1]
