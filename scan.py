@@ -96,6 +96,7 @@ class Scan:
         return (point[0] < 0) or (point[0] > self.width) or (point[1] < 0) or (point[1] > self.height)
 
     def quadrant(self, h_sign, v_sign):
+        print(f"quadrant({h_sign},{v_sign})")
         move_h_r        = self.r.dot( np.array([self.kernel_s,0]) ) # move horizontally rotated
         move_v_r        = self.r.dot( np.array([0,self.kernel_s]) ) # move vertically rotated
         vertices        = np.array([[0, 0,                      h_sign*self.kernel_s,  h_sign*self.kernel_s], 
@@ -112,7 +113,8 @@ class Scan:
                      or (i2 and not self.out_of_bounds(i2) and slide_line.at(i2[0]) > h_sign*current[0][0]) ):
                         continue
                     else: break
-                self.add_to_canvas( h_sign*(self.side/2 + x*self.side),
+                    # h_sign*(self.side/2 + x*self.side)
+                self.add_to_canvas( h_sign*(0.5 + x),
                                     v_sign*(self.side/2 + y*self.side),
                                     get_intensity(self.img[sel]))
                 self.img[sel] = self.color
@@ -123,7 +125,8 @@ class Scan:
     def draw_canvas(self):
         bg_color    = (255, 255, 255)
         fg_color    = (0, 0, 0)
-        img_out     = Image.new("RGB", (self.width*self.zoom_ratio, self.height*self.zoom_ratio), bg_color)
+        # img_out     = Image.new("RGB", (int(self.width*self.zoom_ratio), int(self.height*self.zoom_ratio)), bg_color)
+        img_out     = Image.new("RGB", (self.width*5, self.height*5), bg_color)
         draw        = ImageDraw.Draw(img_out)
         self.canvas_r = dict(sorted(self.canvas_r.items())) # sorts the dictionary by key, i.e. by y
         c = 0
@@ -131,39 +134,52 @@ class Scan:
         for y in self.canvas_r:
             line    = SigmoidPolygon(c*self.side, self.side, alpha = 1, N = 2)
             x       = np.array(self.canvas_r[y]["x"])
+            # print(x)
             # sort the abscissas and the heights
             i_sort  = np.argsort(x)
             x       = x[i_sort]
             height  = np.array(self.canvas_r[y]["height"])[i_sort]
+            # x       = np.array(self.canvas_r[y]["x"])[i_sort]
             for i in range(len(x)):
-                line.height(i, height[i])
+                line.height(x[i]+100, height[i])
             line.compute_points()
-            # print(y, len(x))
-            # print(x)
-            # print(height)
             # print(line.points)
             # print()
-            # print("------------------------------------------------")
-            # print()
-            for i in range(len(line.points)):
-                # 1. mover o ponto em que as linhas horizontais (SigmoidPolygon) cruzam 
-                #    perpendicularmente a linha imaginária dos quadrantes para o centro
-                #    do novo canvas. Aplicar essa translação a todos os pontos do poligono
-                # 2. rotate points
-                # 3. translação de volta dada pelo ponto da etapa 1 de todos os pontos 
-                #    do poligono 
-                line.points[i] = tuple(self.r.dot(line.points[i])+[-min(x),0])
+            # input()
+            # center = self.width, self.height
+            tx = 0 - line.points[0][0]
+            ty = 0 - line.points[0][1]
+            # self.width
+            # self.height
+            # for i in range(len(line.points)):
+            #     # 1. mover o ponto em que as linhas horizontais (SigmoidPolygon) cruzam 
+            #     #    perpendicularmente a linha imaginária dos quadrantes para o centro
+            #     #    do novo canvas. Aplicar essa translação a todos os pontos do poligono
+            #     a = line.points[i][0] + tx
+            #     b = line.points[i][1] + ty
+            #     line.points[i] = (a,b)
+            #     # 2. rotate points
+            #     line.points[i] = ro.dot(line.points[i])
+            #     # 3. translação de volta dada pelo ponto da etapa 1 de todos os pontos 
+            #     #    do poligono 
+            #     a = line.points[i][0] - tx
+            #     b = line.points[i][1] - ty
+            #     line.points[i] = (a,b)
+                # exit(0)
+                # line.points[i] = tuple(self.r.dot(line.points[i])+[-min(x),0])
             line.draw(draw)
             c += 1
-        img_out.save("5-out.png")
+        img_out.save("out.png")
+        print("done")
             
 
 if __name__ == "__main__":
-    kernel_s        = 23
+    # kernel_s        = 23
+    kernel_s = 40
     side            = 40    # size of the side of each square in the output img
     angle           = 45
     alpha           = 2
-    img_name        = "5.jpg"
+    img_name        = "signal-2022-05-30-175346_004.jpeg"
     img 		    = cv2.imread(img_name, cv2.IMREAD_GRAYSCALE)
     height, width   = img.shape
     scan            = Scan(img, kernel_s, side, angle)

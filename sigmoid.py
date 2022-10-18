@@ -46,10 +46,13 @@ class SigmoidPolygon:
         first_y_bottom  = self.bottom_line[0][1]
         last_y_top      = self.top_line[-1][1]
         last_y_bottom   = self.bottom_line[-1][1]
-        self.points     = [(0,first_y_bottom), (0,first_y_top)]
+        # first_x         = (self.top_line[0][0]-0.5)*self.side
+        first_x         = self.top_line[0][0]-self.side/2
+        self.points     = [(first_x,first_y_bottom), (first_x,first_y_top)]
         for i in range(len(self.top_line)-1):
             self.points.extend( self.make_sigmoid(self.top_line[i],self.top_line[i+1]) )
-        last_x = len(self.top_line)*self.side - 1
+        # last_x = len(self.top_line)*self.side - 1
+        last_x = self.top_line[-1][0]+self.side/2
         self.points.extend([(last_x,last_y_top), (last_x,last_y_bottom)])
         for i in reversed(range(len(self.bottom_line)-1)):
             self.points.extend( self.make_sigmoid(self.bottom_line[i],self.bottom_line[i+1])[::-1] )
