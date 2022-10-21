@@ -125,8 +125,8 @@ class Scan:
     def draw_canvas(self):
         bg_color    = (255, 255, 255)
         fg_color    = (0, 0, 0)
-        # img_out     = Image.new("RGB", (int(self.width*self.zoom_ratio), int(self.height*self.zoom_ratio)), bg_color)
-        img_out     = Image.new("RGB", (self.width*2, self.height*2), bg_color)
+        img_out     = Image.new("RGB", (int(self.width*self.zoom_ratio), int(self.height*self.zoom_ratio)), bg_color)
+        # img_out     = Image.new("RGB", (self.width*2, self.height*2), bg_color)
         draw        = ImageDraw.Draw(img_out)
         self.canvas_r = dict(sorted(self.canvas_r.items())) # sorts the dictionary by key, i.e. by y
         c = 0
@@ -151,6 +151,8 @@ class Scan:
                     ty = line.points[i][1]
             lines.append(line)
             c += 1
+        tx += self.side*.7
+        ty += self.side*.7
         for line in lines:
             for i in range(len(line.points)):
                 a = line.points[i][0] - tx
@@ -162,10 +164,10 @@ class Scan:
             
 
 if __name__ == "__main__":
-    # kernel_s        = 23
-    kernel_s = 40
+    kernel_s        = 10
+    # kernel_s = 40
     side            = 40    # size of the side of each square in the output img
-    angle           = 23
+    angle           = 45
     alpha           = 2
     img_name        = "signal-2022-05-30-175346_004.jpeg"
     img 		    = cv2.imread(img_name, cv2.IMREAD_GRAYSCALE)
@@ -173,6 +175,3 @@ if __name__ == "__main__":
     scan            = Scan(img, kernel_s, side, angle)
     scan.scan()
     scan.draw_canvas()
-    
-    
-    
