@@ -1,5 +1,4 @@
-import cv2
-import numpy as np
+import cv2, numpy as np
 from PIL import Image, ImageDraw
 from line import StraightLine
 from sigmoid import SigmoidPolygon
@@ -76,10 +75,10 @@ class Scan:
         return sel.T, edges[-1]
         
     def scan(self):
-        self.quadrant(1, -1)
+        self.quadrant( 1, -1)
         self.quadrant(-1, -1)
-        self.quadrant(-1, 1)
-        self.quadrant(1, 1)
+        self.quadrant(-1,  1)
+        self.quadrant( 1,  1)
         cv2.imwrite("sapo.png", self.img)
         
     def add_to_canvas(self, x, y, intensity):
@@ -113,7 +112,6 @@ class Scan:
                      or (i2 and not self.out_of_bounds(i2) and slide_line.at(i2[0]) > h_sign*current[0][0]) ):
                         continue
                     else: break
-                    # h_sign*(self.side/2 + x*self.side)
                 self.add_to_canvas( h_sign*(0.5 + x),
                                     v_sign*(self.side/2 + y*self.side),
                                     get_intensity(self.img[sel]))
@@ -126,12 +124,11 @@ class Scan:
         bg_color    = (255, 255, 255)
         fg_color    = (0, 0, 0)
         img_out     = Image.new("RGB", (int(self.width*self.zoom_ratio), int(self.height*self.zoom_ratio)), bg_color)
-        # img_out     = Image.new("RGB", (self.width*2, self.height*2), bg_color)
         draw        = ImageDraw.Draw(img_out)
         self.canvas_r = dict(sorted(self.canvas_r.items())) # sorts the dictionary by key, i.e. by y
         c = 0
         ro = rotation_matrix(-self.angle)
-        tx, ty = 10**10, 10**10
+        tx, ty = 1e10, 1e10
         lines = []
         for y in self.canvas_r:
             line    = SigmoidPolygon(c*self.side, self.side, alpha = 1, N = 2)
@@ -168,8 +165,8 @@ if __name__ == "__main__":
     # kernel_s = 40
     side            = 40    # size of the side of each square in the output img
     angle           = 45
-    alpha           = 2
-    img_name        = "signal-2022-05-30-175346_004.jpeg"
+    alpha           = 1
+    img_name        = "signal-2022-05-30-175346_004.jpg"
     img 		    = cv2.imread(img_name, cv2.IMREAD_GRAYSCALE)
     height, width   = img.shape
     scan            = Scan(img, kernel_s, side, angle)

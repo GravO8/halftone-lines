@@ -3,11 +3,17 @@ import numpy as np
 class SigmoidPolygon:
     def __init__(self, y: int, side: int, alpha: float = 1., N: int = 2):
         '''
-        y     - y position of the polygon
-        side  - maximum height of the polygon
-        alpha - controls how width of the sigmoid. Higher alphas mean wider sigmoids
+        The SigmoidPolygon class defines the lines that are drawn in the output
+        image. These lines have a dynamic width proportional to the grey level 
+        intensity of the corresponding square in the original image. Each square
+        in the original image is mapped to a square of side `side` in the output
+        image. The width of the line smoothly changes using a sigmoid function.
+        y     - y position of the polygon in the output image
+        side  - the height of the polygon (and the side size of each square that
+                makes up the polygon)
+        alpha - controls how width of the sigmoid. The higher alphas the wide 
+                the line will be
         N     - number of points to interpolate the sigmoid line
-        Points can be added with `height` method
         '''
         self.N              = N
         self.y              = y
