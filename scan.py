@@ -33,10 +33,15 @@ def make_edges(vertices: np.array):
     assert edges[2].is_parallel(edges[3]), "last two edges aren't parallel"
     return edges
 
-def make_bbox(vertices):
+def make_bbox(vertices: np.array):
     '''
-    No need to scan the entire image to make the selection, just the bounding 
-    box (bbox) that wrapps the tilted square
+    vertices -  array with shape (4,2) with the four 2D vertices that describe 
+                the position of the kernel
+    Outputs the minimum and maximum abscissa and ordinate integer values for all 
+    the points in the vertices array. This is can be seen as the bounding box
+    (bbox) that wraps the points. This method is used in the `select_kernel`
+    method to avoid scanning the whole input dimensions as scanning this bbox
+    is enough.
     '''
     ys = [v[1] for v in vertices]
     xs = [v[0] for v in vertices]
@@ -44,7 +49,11 @@ def make_bbox(vertices):
     
 def make_conds(edges):
     '''
-    Creates the conditions that checks if a point is whithin the tilted square
+    edges - a list with four StraightLine objects that describe a square. Should
+            be the output of the `make_edges` method
+    Returns two lambda functions that describe two 2D planes whose intersection
+    define the square constructed from the edges. These conditions can be used
+    to check if a point is inside the square.
     '''
     b01, b11    = edges[0].intercept, edges[1].intercept
     b21, b31    = edges[2].intercept, edges[3].intercept
@@ -73,9 +82,17 @@ class Scan:
         self.diagonal1  = StraightLine((0,0),(self.width,self.height)) # descending diagonal
         self.diagonal2  = StraightLine((self.width,0),(0,self.height)) # ascending diagonal
     
-    def select_square(self, vertices):
+    def select_kernel(self, vertices):
         '''
-        
+        vertices -  array with shape (4,2) with the four 2D vertices that 
+                    describe the position of the kernel
+        Outputs a tuple with two elements. The first element is a mask of the 
+        current kernel position (a boolean matrix with the same dimensions of 
+        the original image except for the current position of the kernel). This 
+        mask is used to compute the mean grey level intensity in a sliding 
+        window fashion. The second element of the tuple is the StraightLine 
+        object correspoding to the bottom edge of the kernel. This edge is used 
+        to determine the stop condition of the scanning process.
         '''
         edges                       = make_edges(vertices)
         cond0, cond1                = make_conds(edges)
@@ -104,8 +121,10 @@ class Scan:
             self.canvas_r[y]["height"] = [h]
     
     def out_of_bounds(self, point: tuple):
-        return (point[0] < 0) or (point[0] > self.width) or (point[1] < 0) or (point[1] > self.height)
-
+        if point:
+            return (point[0] < 0) or (point[0] > self.width) or (point[1] < 0) or (point[1] > self.height)
+        return True
+    
     def quadrant(self, h_sign: int, v_sign: int):
         print(f"quadrant({h_sign},{v_sign})")
         move_h_r        = self.r.dot( np.array([self.kernel_s,0]) ) # move horizontally rotated
@@ -116,22 +135,22 @@ class Scan:
         for y in range(int(1e10)):
             for x in range(int(1e10)):
                 current = vertices_r + x*h_sign*move_h_r + y*v_sign*move_v_r
-                sel, slide_line = self.select_square(current)
+                sel, kernel_bottom_line = self.select_kernel(current)
                 if not np.any(sel):
-                    i1 = self.diagonal1.intersection(slide_line)
-                    i2 = self.diagonal2.intersection(slide_line)
-                    if( (i1 and not self.out_of_bounds(i1) and slide_line.at(i1[0]) > h_sign*current[0][0])
-                     or (i2 and not self.out_of_bounds(i2) and slide_line.at(i2[0]) > h_sign*current[0][0]) ):
+                    i1 = self.diagonal1.intersection(kernel_bottom_line)
+                    i2 = self.diagonal2.intersection(kernel_bottom_line)
+                    if (self.out_of_bounds(i1) and self.out_of_bounds(i2)) or (np.sign(i1[0]-current[0][0]) != h_sign):
+                        break
+                    else:
                         continue
-                    else: break
                 self.add_to_canvas( h_sign*(0.5 + x),
                                     v_sign*(self.side/2 + y*self.side),
                                     get_intensity(self.img[sel]))
                 self.img[sel] = self.color
                 self.color = (50 if self.c%2==0 else 20)+[50,100][(h_sign+1)//2]+[50,100][(v_sign+1)//2]
                 self.c += 1
-            if x == 0: break
-            
+            if x == 0:
+                break
     def draw_canvas(self):
         bg_color    = (255, 255, 255)
         fg_color    = (0, 0, 0)
@@ -141,6 +160,7 @@ class Scan:
         ro = rotation_matrix(-self.angle)
         tx, ty = 1e10, 1e10
         lines = []
+        c = 0
         for y in self.canvas_r:
             line    = SigmoidPolygon(c*self.side, self.side, alpha = 1, N = 2)
             x       = np.array(self.canvas_r[y]["x"])
@@ -158,6 +178,7 @@ class Scan:
                 if line.points[i][1] < ty:
                     ty = line.points[i][1]
             lines.append(line)
+            c += 1
         tx += self.side*.7
         ty += self.side*.7
         for line in lines:

@@ -13,7 +13,7 @@ The algorithm scans the input image in its four quadrants. This is done by findi
    |       |      |       |      | +-+-+ |        
    +-------+      +-------+      +-------+
    input img      input img   the four squares   
-                    center    around the center
+                  center      around the center
 ```
 These kernels are defined by the array `vertices` in the `quadrant` method of the [`Scan` class](https://github.com/GravO8/halftone-lines/blob/master/scan.py). They are constructed from the base kernel defined by the vertices `(0,0)`, `(0,kernel_s)`, `(kernel_s,kernel_s)` and `(kernel_s,0)`, where `kernel_s` stands for *"kernel side"*. 
 
@@ -46,6 +46,8 @@ move_v_r = r_matrix.dot( np.array([0,kernel_s]) )
 ```
 
 They too are rotated by `angle` degrees to match the orientation of the kernels. 
+
+
 
 
 
