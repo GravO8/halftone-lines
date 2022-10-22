@@ -7,19 +7,28 @@ from sigmoid import SigmoidPolygon
 def get_intensity(square):
     return 1-square.mean()/255
 
-def rotation_matrix(angle):
+def rotation_matrix(angle: int):
+    '''
+    angle - angle to rotate in degrees
+    Outputs an array with the correspoding (2,2) rotation matrix. See more
+    details here: https://en.wikipedia.org/wiki/Rotation_matrix
+    '''
     angle = np.deg2rad(angle)
     return np.array([[np.cos(angle),-np.sin(angle)],[np.sin(angle),np.cos(angle)]])
     
-def make_edges(vertices):
+def make_edges(vertices: np.array):
     '''
-    Outputs the four edges of the tilted square. Two parallel sides at the time.
+    vertices -  array with shape (4,2) with the four 2D vertices that describe 
+                the position of the kernel
+    Outputs four a list with StraightLine objects. These lines corresponding to 
+    the line segments that make up the edges of the kernel.
     '''
     edges = []
     edges.append( StraightLine(vertices[0],vertices[1]) )
     edges.append( StraightLine(vertices[2],vertices[3]) )
     edges.append( StraightLine(vertices[1],vertices[2]) )
-    edges.append( StraightLine(vertices[-1],vertices[0]) )
+    edges.append( StraightLine(vertices[3],vertices[0]) )
+    # sanity checks
     assert edges[0].is_parallel(edges[1]), "first two edges aren't parallel"
     assert edges[2].is_parallel(edges[3]), "last two edges aren't parallel"
     return edges
@@ -61,10 +70,13 @@ class Scan:
         self.canvas_r   = {} # canvas rotated
         self.color      = 255
         self.c          = 0
-        self.diagonal1  = StraightLine((0,0),(self.width,self.height))
-        self.diagonal2  = StraightLine((self.width,0),(0,self.height))
+        self.diagonal1  = StraightLine((0,0),(self.width,self.height)) # descending diagonal
+        self.diagonal2  = StraightLine((self.width,0),(0,self.height)) # ascending diagonal
     
     def select_square(self, vertices):
+        '''
+        
+        '''
         edges                       = make_edges(vertices)
         cond0, cond1                = make_conds(edges)
         sel                         = np.array(self.selection, copy = True)
@@ -91,10 +103,10 @@ class Scan:
             self.canvas_r[y]["x"] = [x]
             self.canvas_r[y]["height"] = [h]
     
-    def out_of_bounds(self, point):
+    def out_of_bounds(self, point: tuple):
         return (point[0] < 0) or (point[0] > self.width) or (point[1] < 0) or (point[1] > self.height)
 
-    def quadrant(self, h_sign, v_sign):
+    def quadrant(self, h_sign: int, v_sign: int):
         print(f"quadrant({h_sign},{v_sign})")
         move_h_r        = self.r.dot( np.array([self.kernel_s,0]) ) # move horizontally rotated
         move_v_r        = self.r.dot( np.array([0,self.kernel_s]) ) # move vertically rotated
@@ -126,7 +138,6 @@ class Scan:
         img_out     = Image.new("RGB", (int(self.width*self.zoom_ratio), int(self.height*self.zoom_ratio)), bg_color)
         draw        = ImageDraw.Draw(img_out)
         self.canvas_r = dict(sorted(self.canvas_r.items())) # sorts the dictionary by key, i.e. by y
-        c = 0
         ro = rotation_matrix(-self.angle)
         tx, ty = 1e10, 1e10
         lines = []
@@ -147,7 +158,6 @@ class Scan:
                 if line.points[i][1] < ty:
                     ty = line.points[i][1]
             lines.append(line)
-            c += 1
         tx += self.side*.7
         ty += self.side*.7
         for line in lines:
@@ -168,7 +178,6 @@ if __name__ == "__main__":
     alpha           = 1
     img_name        = "signal-2022-05-30-175346_004.jpg"
     img 		    = cv2.imread(img_name, cv2.IMREAD_GRAYSCALE)
-    height, width   = img.shape
     scan            = Scan(img, kernel_s, side, angle)
     scan.scan()
     scan.draw_canvas()
