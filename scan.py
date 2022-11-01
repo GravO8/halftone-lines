@@ -63,6 +63,11 @@ def make_conds(edges):
     cond1       = lambda x,y: slope1*x + min(b21,b31) <= y <= slope1*x + max(b21,b31)
     return cond0, cond1
 
+def distance(pt1, pt2):
+    if (pt1 is not None) and (pt2 is not None):
+        return np.sqrt((pt1[0]-pt2[0])**2 + (pt1[1]-pt2[1])**2)
+    return 1e10
+
 class Scan:
     def __init__(self, img, kernel_s, side, angle):
         self.img        = img
@@ -98,9 +103,11 @@ class Scan:
         cond0, cond1                = make_conds(edges)
         sel                         = np.array(self.selection, copy = True)
         min_x, min_y, max_x, max_y  = make_bbox(vertices)
+        # print(edges)
         for x in range(max(0,min_x), min(max_x,self.width)):
             for y in range(max(0,min_y), min(max_y,self.height)):
                 sel[x][y] = cond0(x,y) and cond1(x,y)
+        # print(sel.any())
         return sel.T, edges[-1]
         
     def scan(self):
@@ -127,30 +134,47 @@ class Scan:
     
     def quadrant(self, h_sign: int, v_sign: int):
         print(f"quadrant({h_sign},{v_sign})")
-        move_h_r        = self.r.dot( np.array([self.kernel_s,0]) ) # move horizontally rotated
-        move_v_r        = self.r.dot( np.array([0,self.kernel_s]) ) # move vertically rotated
-        vertices        = np.array([[0, 0,                      h_sign*self.kernel_s,  h_sign*self.kernel_s], 
-                                    [0, v_sign*self.kernel_s,   v_sign*self.kernel_s,  0]])
-        vertices_r      = self.r.dot(vertices).T + np.array([self.x_center, self.y_center])
+        move_h_r   = self.r.dot( np.array([self.kernel_s,0]) ) # move horizontally rotated
+        move_v_r   = self.r.dot( np.array([0,self.kernel_s]) ) # move vertically rotated
+        vertices   = np.array([[0, 0,                      h_sign*self.kernel_s,  h_sign*self.kernel_s], 
+                               [0, v_sign*self.kernel_s,   v_sign*self.kernel_s,  0]])
+        vertices_r = self.r.dot(vertices).T + np.array([self.x_center, self.y_center])
         for y in range(int(1e10)):
             for x in range(int(1e10)):
                 current = vertices_r + x*h_sign*move_h_r + y*v_sign*move_v_r
                 sel, kernel_bottom_line = self.select_kernel(current)
-                if not np.any(sel):
+                if np.any(sel):
+                    self.add_to_canvas( h_sign*(0.5 + x),
+                                        v_sign*(self.side/2 + y*self.side),
+                                        get_intensity(self.img[sel]))
+                    self.img[sel] = self.color
+                    self.color = (50 if self.c%2==0 else 20)+[50,100][(h_sign+1)//2]+[50,100][(v_sign+1)//2]
+                    self.c += 1
+                else: # the kernel is outside the input image
                     i1 = self.diagonal1.intersection(kernel_bottom_line)
                     i2 = self.diagonal2.intersection(kernel_bottom_line)
-                    if (self.out_of_bounds(i1) and self.out_of_bounds(i2)) or (np.sign(i1[0]-current[0][0]) != h_sign):
-                        break
+                    d1 = distance(i1, current[0])
+                    d2 = distance(i2, current[0])
+                    # find the closest diagonal intersection with the current row
+                    if d1 < d2:
+                        # if the intersection is out of bonds OR
+                        # is within bounds but can't be reached
+                        # stop the current x iteration loop
+                        if self.out_of_bounds(i1) or (np.sign(i1[0]-current[0][0]) != h_sign):
+                            break
                     else:
-                        continue
-                self.add_to_canvas( h_sign*(0.5 + x),
-                                    v_sign*(self.side/2 + y*self.side),
-                                    get_intensity(self.img[sel]))
-                self.img[sel] = self.color
-                self.color = (50 if self.c%2==0 else 20)+[50,100][(h_sign+1)//2]+[50,100][(v_sign+1)//2]
-                self.c += 1
-            if x == 0:
+                        if self.out_of_bounds(i2) or (np.sign(i2[0]-current[0][0]) != h_sign):
+                            break
+            if x == 0: 
+                # python allows to access loop variables outside their block scope
+                # when x is 0, the kernel is in a row where neither the first kernel
+                # position nor any position left/right to it intesects the image
+                # every other row above/bellow this row will be in the same situation
+                # so we can exit the outer y iteration loop
+                # I write "left/right" and "above/bellow" because these directions
+                # depend on the quadrant being scanned
                 break
+    
     def draw_canvas(self):
         bg_color    = (255, 255, 255)
         fg_color    = (0, 0, 0)
@@ -192,12 +216,12 @@ class Scan:
             
 
 if __name__ == "__main__":
-    kernel_s        = 10
-    # kernel_s = 40
+    # kernel_s        = 10
+    kernel_s = 40
     side            = 40    # size of the side of each square in the output img
     angle           = 45
     alpha           = 1
-    img_name        = "signal-2022-05-30-175346_004.jpg"
+    img_name        = "signal-2022-05-30-175346_004-square.jpg"
     img 		    = cv2.imread(img_name, cv2.IMREAD_GRAYSCALE)
     scan            = Scan(img, kernel_s, side, angle)
     scan.scan()

@@ -1,3 +1,5 @@
+import numpy as np
+
 class StraightLine:
     def __init__(self, a, b):
         '''
@@ -6,13 +8,16 @@ class StraightLine:
         where position 0 and 1 represent the abscissa and ordinate, respectively
         '''
         self.slope      = (a[1]-b[1])/(a[0]-b[0]+1e-8)
+        if np.abs(self.slope) > 1000:
+            self.slope = 1000
         self.intercept  = a[1] - self.slope*a[0]
     def is_parallel(self, line, precision = 1e-5):
         return abs(self.slope - line.slope) < precision
     def at(self, x):
         return self.slope*x + self.intercept
     def intersection(self, line):
-        if self.is_parallel(line): return False
+        if self.is_parallel(line):
+            return None
         x = (line.intercept-self.intercept)/(self.slope-line.slope)
         y = self.at(x)
         return x,y
