@@ -69,8 +69,9 @@ def distance(pt1, pt2):
     return 1e10
 
 class HalftoneLines:
-    def __init__(self, img, kernel_s, side, angle):
-        self.img        = img
+    def __init__(self, img_name, kernel_s, side, angle):
+        self.img        = cv2.imread(img_name, cv2.IMREAD_GRAYSCALE)
+        self.img_name   = img_name
         self.height     = self.img.shape[0]
         self.width      = self.img.shape[1]
         self.x_center   = self.width//2
