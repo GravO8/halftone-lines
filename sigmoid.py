@@ -52,12 +52,10 @@ class SigmoidPolygon:
         first_y_bottom  = self.bottom_line[0][1]
         last_y_top      = self.top_line[-1][1]
         last_y_bottom   = self.bottom_line[-1][1]
-        # first_x         = (self.top_line[0][0]-0.5)*self.side
         first_x         = self.top_line[0][0]-self.side/2
         self.points     = [(first_x,first_y_bottom), (first_x,first_y_top)]
         for i in range(len(self.top_line)-1):
             self.points.extend( self.make_sigmoid(self.top_line[i],self.top_line[i+1]) )
-        # last_x = len(self.top_line)*self.side - 1
         last_x = self.top_line[-1][0]+self.side/2
         self.points.extend([(last_x,last_y_top), (last_x,last_y_bottom)])
         for i in reversed(range(len(self.bottom_line)-1)):
@@ -67,26 +65,3 @@ class SigmoidPolygon:
         if len(self.points) == 0:
             self.compute_points()
         draw.polygon(self.points, fill = color)
-
-
-if __name__ == "__main__":
-    import matplotlib.pyplot as plt
-
-    y_end   = 1
-    y_start = 0
-    x_start = -1000
-    x_end   = 1000
-    SLOPE   = 10000
-
-    def sigmoid(x):
-        return (y_start + (y_end-y_start)/(1+np.exp(-x*SLOPE)))
-
-    # x = np.arange(x_start, x_end, (x_end-x_start)/100)
-    x = [i/100 for i in range(-1000,1000)]
-    y = [sigmoid(e) for e in x]
-
-    plt.figure(figsize = (20,6))
-    plt.plot(x,y)
-    plt.axis("equal")
-    plt.grid(True)
-    plt.show()

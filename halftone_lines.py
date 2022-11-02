@@ -68,7 +68,7 @@ def distance(pt1, pt2):
         return np.sqrt((pt1[0]-pt2[0])**2 + (pt1[1]-pt2[1])**2)
     return 1e10
 
-class Scan:
+class HalftoneLines:
     def __init__(self, img, kernel_s, side, angle):
         self.img        = img
         self.height     = self.img.shape[0]
@@ -103,11 +103,9 @@ class Scan:
         cond0, cond1                = make_conds(edges)
         sel                         = np.array(self.selection, copy = True)
         min_x, min_y, max_x, max_y  = make_bbox(vertices)
-        # print(edges)
         for x in range(max(0,min_x), min(max_x,self.width)):
             for y in range(max(0,min_y), min(max_y,self.height)):
                 sel[x][y] = cond0(x,y) and cond1(x,y)
-        # print(sel.any())
         return sel.T, edges[-1]
         
     def scan(self):
@@ -176,43 +174,53 @@ class Scan:
                 break
     
     def draw_canvas(self):
-        bg_color    = (255, 255, 255)
-        fg_color    = (0, 0, 0)
-        img_out     = Image.new("RGB", (int(self.width*self.zoom_ratio), int(self.height*self.zoom_ratio)), bg_color)
-        draw        = ImageDraw.Draw(img_out)
-        self.canvas_r = dict(sorted(self.canvas_r.items())) # sorts the dictionary by key, i.e. by y
-        ro = rotation_matrix(-self.angle)
-        tx, ty = 1e10, 1e10
-        lines = []
-        c = 0
+        bg_color        = (255, 255, 255)
+        fg_color        = (0, 0, 0)
+        img_out         = Image.new("RGB", 
+                                    (int(self.width*self.zoom_ratio), 
+                                    int(self.height*self.zoom_ratio)), 
+                                    bg_color)
+        draw            = ImageDraw.Draw(img_out)
+        self.canvas_r   = dict(sorted(self.canvas_r.items())) # sorts the dictionary by key, i.e. by y
+        ro              = rotation_matrix(-self.angle)
+        tx, ty          = 1e10, 1e10
+        lines           = []
+        c               = 0 # row counter
         for y in self.canvas_r:
             line    = SigmoidPolygon(c*self.side, self.side, alpha = 1, N = 2)
             x       = np.array(self.canvas_r[y]["x"])
-            # sort the abscissas and the heights
+            # sort the abscissas and their respective heights
             i_sort  = np.argsort(x)
             x       = x[i_sort]
             height  = np.array(self.canvas_r[y]["height"])[i_sort]
             for i in range(len(x)):
                 line.height(x[i], height[i])
             line.compute_points()
+            # rotate the lines to match the original orientation and 
+            # obtain the min horizontal and vertical position of all points
             for i in range(len(line.points)):
                 line.points[i] = tuple(self.r.dot(line.points[i]))
-                if line.points[i][0] < tx:
-                    tx = line.points[i][0]
-                if line.points[i][1] < ty:
-                    ty = line.points[i][1]
+                x, y           = line.points[i]
+                if x < tx:
+                    tx = x
+                if y < ty:
+                    ty = y
             lines.append(line)
             c += 1
         tx += self.side*.7
         ty += self.side*.7
         for line in lines:
             for i in range(len(line.points)):
-                a = line.points[i][0] - tx
-                b = line.points[i][1] - ty
-                line.points[i] = (a,b)
+                x = line.points[i][0] - tx
+                y = line.points[i][1] - ty
+                line.points[i] = (x,y)
             line.draw(draw)
         img_out.save("out.png")
         print("done")
+        
+    def halftone(self):
+        self.scan()
+        self.draw_canvas()
             
 
 if __name__ == "__main__":
@@ -223,6 +231,5 @@ if __name__ == "__main__":
     alpha           = 1
     img_name        = "signal-2022-05-30-175346_004-square.jpg"
     img 		    = cv2.imread(img_name, cv2.IMREAD_GRAYSCALE)
-    scan            = Scan(img, kernel_s, side, angle)
-    scan.scan()
-    scan.draw_canvas()
+    halftone        = HalftoneLines(img, kernel_s, side, angle)
+    halftone.halftone()
