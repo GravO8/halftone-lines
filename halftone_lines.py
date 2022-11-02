@@ -69,24 +69,26 @@ def distance(pt1, pt2):
     return 1e10
 
 class HalftoneLines:
-    def __init__(self, img_name, kernel_s, side, angle):
+    def __init__(self, img_name, kernel_s: int, side: int, bg_color: tuple, 
+    fg_color: tuple, alpha: float, angle: float, N: int, verbose: bool = True):
         self.img        = cv2.imread(img_name, cv2.IMREAD_GRAYSCALE)
         self.img_name   = img_name
         self.height     = self.img.shape[0]
         self.width      = self.img.shape[1]
-        self.x_center   = self.width//2
-        self.y_center   = self.height//2
+        self.bg_color   = bg_color
+        self.fg_color   = fg_color
+        self.alpha      = alpha
+        self.center     = np.array([self.width//2, self.height//2])
         self.r          = rotation_matrix(angle)
         self.kernel_s   = kernel_s
-        self.angle      = angle
         self.side       = side
+        self.N          = N
         self.zoom_ratio = self.side/self.kernel_s
         self.selection  = np.zeros((self.width,self.height), dtype = bool)
         self.canvas_r   = {} # canvas rotated
-        self.color      = 255
-        self.c          = 0
         self.diagonal1  = StraightLine((0,0),(self.width,self.height)) # descending diagonal
         self.diagonal2  = StraightLine((self.width,0),(0,self.height)) # ascending diagonal
+        self.verbose    = verbose
     
     def select_kernel(self, vertices):
         '''
@@ -114,7 +116,6 @@ class HalftoneLines:
         self.quadrant(-1, -1)
         self.quadrant(-1,  1)
         self.quadrant( 1,  1)
-        cv2.imwrite("sapo.png", self.img)
         
     def add_to_canvas(self, x, y, intensity):
         h = self.side * intensity
@@ -132,12 +133,13 @@ class HalftoneLines:
         return True
     
     def quadrant(self, h_sign: int, v_sign: int):
-        print(f"quadrant({h_sign},{v_sign})")
+        if self.verbose:
+            print(f"quadrant({h_sign},{v_sign})")
         move_h_r   = self.r.dot( np.array([self.kernel_s,0]) ) # move horizontally rotated
         move_v_r   = self.r.dot( np.array([0,self.kernel_s]) ) # move vertically rotated
         vertices   = np.array([[0, 0,                      h_sign*self.kernel_s,  h_sign*self.kernel_s], 
                                [0, v_sign*self.kernel_s,   v_sign*self.kernel_s,  0]])
-        vertices_r = self.r.dot(vertices).T + np.array([self.x_center, self.y_center])
+        vertices_r = self.r.dot(vertices).T + self.center
         for y in range(int(1e10)):
             for x in range(int(1e10)):
                 current = vertices_r + x*h_sign*move_h_r + y*v_sign*move_v_r
@@ -146,9 +148,6 @@ class HalftoneLines:
                     self.add_to_canvas( h_sign*(0.5 + x),
                                         v_sign*(self.side/2 + y*self.side),
                                         get_intensity(self.img[sel]))
-                    self.img[sel] = self.color
-                    self.color = (50 if self.c%2==0 else 20)+[50,100][(h_sign+1)//2]+[50,100][(v_sign+1)//2]
-                    self.c += 1
                 else: # the kernel is outside the input image
                     i1 = self.diagonal1.intersection(kernel_bottom_line)
                     i2 = self.diagonal2.intersection(kernel_bottom_line)
@@ -175,20 +174,16 @@ class HalftoneLines:
                 break
     
     def draw_canvas(self):
-        bg_color        = (255, 255, 255)
-        fg_color        = (0, 0, 0)
         img_out         = Image.new("RGB", 
                                     (int(self.width*self.zoom_ratio), 
                                     int(self.height*self.zoom_ratio)), 
-                                    bg_color)
+                                    self.bg_color)
         draw            = ImageDraw.Draw(img_out)
         self.canvas_r   = dict(sorted(self.canvas_r.items())) # sorts the dictionary by key, i.e. by y
-        ro              = rotation_matrix(-self.angle)
-        tx, ty          = 1e10, 1e10
+        tx, ty, c       = 1e10, 1e10, 0
         lines           = []
-        c               = 0 # row counter
         for y in self.canvas_r:
-            line    = SigmoidPolygon(c*self.side, self.side, alpha = 1, N = 2)
+            line    = SigmoidPolygon(c*self.side, self.side, alpha = self.alpha, N = self.N)
             x       = np.array(self.canvas_r[y]["x"])
             # sort the abscissas and their respective heights
             i_sort  = np.argsort(x)
@@ -202,35 +197,20 @@ class HalftoneLines:
             for i in range(len(line.points)):
                 line.points[i] = tuple(self.r.dot(line.points[i]))
                 x, y           = line.points[i]
-                if x < tx:
-                    tx = x
-                if y < ty:
-                    ty = y
+                tx             = min(tx, x)
+                ty             = min(ty, y)
             lines.append(line)
             c += 1
         tx += self.side*.7
         ty += self.side*.7
         for line in lines:
             for i in range(len(line.points)):
-                x = line.points[i][0] - tx
-                y = line.points[i][1] - ty
-                line.points[i] = (x,y)
-            line.draw(draw)
-        img_out.save("out.png")
-        print("done")
+                line.points[i] = (line.points[i][0] - tx, line.points[i][1] - ty)
+            line.draw(draw, color = self.fg_color)
+        img_out.save("out-"+self.img_name)
+        if self.verbose:
+            print("done")
         
     def halftone(self):
         self.scan()
         self.draw_canvas()
-            
-
-if __name__ == "__main__":
-    # kernel_s        = 10
-    kernel_s = 40
-    side            = 40    # size of the side of each square in the output img
-    angle           = 45
-    alpha           = 1
-    img_name        = "signal-2022-05-30-175346_004-square.jpg"
-    img 		    = cv2.imread(img_name, cv2.IMREAD_GRAYSCALE)
-    halftone        = HalftoneLines(img, kernel_s, side, angle)
-    halftone.halftone()

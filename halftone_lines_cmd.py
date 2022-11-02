@@ -31,7 +31,8 @@ def get_args():
     , type = int, default = 20)
     parser.add_argument("-k", "--kernel", help = "(optional)- Length (in pixel"+
     "s) of the side of each square the program will scan from original image ("+
-    "default is 0.7%% of the minimum between the width and height)", type = int)
+    "default is 0.7%% of the minimum between the width and height)", type = int,
+    default = 20)
     parser.add_argument("-bg", "--bg_color", help = "(optional)- Background co"+
     "lor of the output image in RGB (default is white)", default = "(255,255,2"+
     "55)", type = rgb_color)
@@ -44,6 +45,12 @@ def get_args():
     parser.add_argument("-an", "--angle", help = "(optional)- Float that deter"+
     "mines the orientation of the lines in the output image (default is 0, i.e"+
     ". horizontal lines)", type = float, default = 0)
+    parser.add_argument("-v", "--verbose", help = "(optional)- Boolean, prints"+
+    " debugging progress strings when true and prints nothing otherwise (defau"+
+    "lt is true)", type = bool, default = 1)
+    parser.add_argument("-N", "--smoothness", help = "(optional)- Integer, the"+
+    " number of points that make up the sigmoid lines. More points give smooth"+
+    "er lines. Deault is 5.", type = int, default = 5)
     return parser.parse_args()
 
 
@@ -55,5 +62,7 @@ if __name__ == "__main__":
                             bg_color    = str_to_rgb(args.bg_color),
                             fg_color    = str_to_rgb(args.fg_color),
                             alpha       = args.alpha,
-                            angle       = args.angle)
+                            angle       = args.angle,
+                            N           = args.smoothness,
+                            verbose     = args.verbose)
     halftone.halftone()
