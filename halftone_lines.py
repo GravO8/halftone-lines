@@ -69,9 +69,10 @@ def distance(pt1, pt2):
     return 1e10
 
 class HalftoneLines:
-    def __init__(self, img_name, kernel_s: int, side: int, bg_color: tuple, 
-    fg_color: tuple, alpha: float, angle: float, N: int, verbose: bool = True):
+    def __init__(self, img_name, kernel_s: int, bg_color: tuple, fg_color: tuple, 
+    alpha: float, angle: float, N: int, side: int = None, verbose: bool = True):
         self.img        = cv2.imread(img_name, cv2.IMREAD_GRAYSCALE)
+        self.img        = cv2.createCLAHE(clipLimit = 2.0, tileGridSize = (8,8)).apply(self.img)
         self.img_name   = img_name
         self.height     = self.img.shape[0]
         self.width      = self.img.shape[1]
@@ -80,9 +81,12 @@ class HalftoneLines:
         self.alpha      = alpha
         self.center     = np.array([self.width//2, self.height//2])
         self.r          = rotation_matrix(angle)
+        self.angle      = angle
         self.kernel_s   = kernel_s
-        self.side       = side
         self.N          = N
+        if side is None:
+            side = np.ceil(min(height,height)*0.007)
+        self.side       = side
         self.zoom_ratio = self.side/self.kernel_s
         self.selection  = np.zeros((self.width,self.height), dtype = bool)
         self.canvas_r   = {} # canvas rotated
@@ -192,22 +196,17 @@ class HalftoneLines:
             for i in range(len(x)):
                 line.height(x[i], height[i])
             line.compute_points()
-            # rotate the lines to match the original orientation and 
-            # obtain the min horizontal and vertical position of all points
-            for i in range(len(line.points)):
-                line.points[i] = tuple(self.r.dot(line.points[i]))
-                x, y           = line.points[i]
-                tx             = min(tx, x)
-                ty             = min(ty, y)
+            x_min, y_min = line.rotate(self.r)
+            tx           = min(x_min, tx)
+            ty           = min(y_min, ty)
+            c           += 1
             lines.append(line)
-            c += 1
-        tx += self.side*.7
-        ty += self.side*.7
+        tx += self.side*np.sin(np.deg2rad(self.angle))
+        ty += self.side*np.sin(np.deg2rad(self.angle))
         for line in lines:
-            for i in range(len(line.points)):
-                line.points[i] = (line.points[i][0] - tx, line.points[i][1] - ty)
+            line.translate(tx, ty)
             line.draw(draw, color = self.fg_color)
-        img_out.save("out-"+self.img_name)
+        img_out.save("out-" + self.img_name)
         if self.verbose:
             print("done")
         

@@ -64,3 +64,8 @@ The image below has a schematic representation of how the sliding window works. 
 The algorithm can be optimized by directly updating the `StraightLine` objects instead of constructing new objects everytime the kernel is moved.
 
 ## 3. Drawing
+
+
+# Known bugs
+
+Small angles (1 degree or lower) don't work.

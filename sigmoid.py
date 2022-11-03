@@ -37,10 +37,14 @@ class SigmoidPolygon:
         height - height of the new point, how wide it should be
         '''
         assert height <= self.side
-        y_top  = (self.side-height)/2
-        y_bot  = height + y_top
-        self.top_line.append((x*self.side+self.side/2,y_top+self.y-self.alpha))
-        self.bottom_line.append((x*self.side+self.side/2,y_bot+self.y+self.alpha))
+        height = height * self.alpha
+        if height/self.side < 0.02:
+            self.compute_points()
+        else:
+            y_top = (self.side-height)/2
+            y_bot = height + y_top
+            self.top_line.append((x*self.side+self.side/2, (y_top+self.y) ))
+            self.bottom_line.append((x*self.side+self.side/2, (y_bot+self.y) ))
 
     def compute_points(self):
         '''
@@ -48,20 +52,46 @@ class SigmoidPolygon:
         the `compute_points` method should be called to interpolate the nice
         sigmoid polygon between the points 
         '''
+        if len(self.top_line) == 0:
+            return
         first_y_top     = self.top_line[0][1]
         first_y_bottom  = self.bottom_line[0][1]
         last_y_top      = self.top_line[-1][1]
         last_y_bottom   = self.bottom_line[-1][1]
         first_x         = self.top_line[0][0]-self.side/2
-        self.points     = [(first_x,first_y_bottom), (first_x,first_y_top)]
+        points          = [(first_x,first_y_bottom), (first_x,first_y_top)]
         for i in range(len(self.top_line)-1):
-            self.points.extend( self.make_sigmoid(self.top_line[i],self.top_line[i+1]) )
+            points.extend( self.make_sigmoid(self.top_line[i],self.top_line[i+1]) )
         last_x = self.top_line[-1][0]+self.side/2
-        self.points.extend([(last_x,last_y_top), (last_x,last_y_bottom)])
+        points.extend([(last_x,last_y_top), (last_x,last_y_bottom)])
         for i in reversed(range(len(self.bottom_line)-1)):
-            self.points.extend( self.make_sigmoid(self.bottom_line[i],self.bottom_line[i+1])[::-1] )
+            points.extend( self.make_sigmoid(self.bottom_line[i],self.bottom_line[i+1])[::-1] )
+        self.top_line    = []
+        self.bottom_line = []
+        self.points.append(points)
+        
+    def rotate(self, rotation_matrix):
+        '''
+        rotate the lines to match the original orientation and 
+        obtain the min horizontal and vertical position of all points
+        '''
+        x_min, y_min = 1e10, 1e10 
+        for i in range(len(self.points)):
+            for j in range(len(self.points[i])):
+                self.points[i][j] = tuple(rotation_matrix.dot(self.points[i][j]))
+                x, y              = self.points[i][j]
+                x_min             = min(x_min, x)
+                y_min             = min(y_min, y)
+        return x_min, y_min
+        
+    def translate(self, tx = 0, ty = 0):
+        for i in range(len(self.points)):
+            for j in range(len(self.points[i])):
+                self.points[i][j] = (self.points[i][j][0] - tx, self.points[i][j][1] - ty)
 
     def draw(self, draw, color: str = "black"):
-        if len(self.points) == 0:
-            self.compute_points()
-        draw.polygon(self.points, fill = color)
+        # if len(self.points) == 0:
+        #     self.points.append( self.compute_points() )
+        # print(len(self.points))
+        for points in self.points:
+            draw.polygon(points, fill = color)

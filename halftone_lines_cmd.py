@@ -41,7 +41,7 @@ def get_args():
     , type = rgb_color)
     parser.add_argument("-al", "--alpha", help = "(optional)- Float (greater t"+
     "han 0) that determines how big the circles can be. When alpha is 1, the m"+
-    "aximum radius is side/2 (default is 1.4)", type = float, default = 1.4)
+    "aximum radius is side/2 (default is 1.4)", type = float, default = 0)
     parser.add_argument("-an", "--angle", help = "(optional)- Float that deter"+
     "mines the orientation of the lines in the output image (default is 0, i.e"+
     ". horizontal lines)", type = float, default = 0)
