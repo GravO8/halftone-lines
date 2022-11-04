@@ -150,7 +150,7 @@ class HalftoneLines:
                 sel, kernel_bottom_line = self.select_kernel(current)
                 if np.any(sel):
                     self.add_to_canvas( h_sign*(0.5 + x),
-                                        v_sign*(self.side/2 + y*self.side),
+                                        v_sign*(0.5 + y),
                                         get_intensity(self.img[sel]))
                 else: # the kernel is outside the input image
                     i1 = self.diagonal1.intersection(kernel_bottom_line)
@@ -184,10 +184,9 @@ class HalftoneLines:
                                     self.bg_color)
         draw            = ImageDraw.Draw(img_out)
         self.canvas_r   = dict(sorted(self.canvas_r.items())) # sorts the dictionary by key, i.e. by y
-        tx, ty, c       = 1e10, 1e10, 0
         lines           = []
         for y in self.canvas_r:
-            line    = SigmoidPolygon(c*self.side, self.side, alpha = self.alpha, N = self.N)
+            line    = SigmoidPolygon(y*self.side, self.side, alpha = self.alpha, N = self.N)
             x       = np.array(self.canvas_r[y]["x"])
             # sort the abscissas and their respective heights
             i_sort  = np.argsort(x)
@@ -196,15 +195,12 @@ class HalftoneLines:
             for i in range(len(x)):
                 line.height(x[i], height[i])
             line.compute_points()
-            x_min, y_min = line.rotate(self.r)
-            tx           = min(x_min, tx)
-            ty           = min(y_min, ty)
-            c           += 1
+            line.rotate(self.r)
             lines.append(line)
-        tx += self.side*np.sin(np.deg2rad(self.angle))
-        ty += self.side*np.sin(np.deg2rad(self.angle))
         for line in lines:
-            line.translate(tx, ty)
+            line.translate( -self.width*self.zoom_ratio/2, 
+                            -self.height*self.zoom_ratio/2)
+                             # + self.side*np.sin(2*np.deg2rad(self.angle))
             line.draw(draw, color = self.fg_color)
         img_out.save("out-" + self.img_name)
         if self.verbose:

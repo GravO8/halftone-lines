@@ -71,18 +71,9 @@ class SigmoidPolygon:
         self.points.append(points)
         
     def rotate(self, rotation_matrix):
-        '''
-        rotate the lines to match the original orientation and 
-        obtain the min horizontal and vertical position of all points
-        '''
-        x_min, y_min = 1e10, 1e10 
         for i in range(len(self.points)):
             for j in range(len(self.points[i])):
                 self.points[i][j] = tuple(rotation_matrix.dot(self.points[i][j]))
-                x, y              = self.points[i][j]
-                x_min             = min(x_min, x)
-                y_min             = min(y_min, y)
-        return x_min, y_min
         
     def translate(self, tx = 0, ty = 0):
         for i in range(len(self.points)):

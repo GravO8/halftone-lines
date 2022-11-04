@@ -69,3 +69,5 @@ The algorithm can be optimized by directly updating the `StraightLine` objects i
 # Known bugs
 
 Small angles (1 degree or lower) don't work.
+Angle 100 hungs up
+Angle -90 hungs up
