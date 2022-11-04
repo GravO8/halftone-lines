@@ -198,9 +198,8 @@ class HalftoneLines:
             line.rotate(self.r)
             lines.append(line)
         for line in lines:
-            line.translate( -self.width*self.zoom_ratio/2, 
-                            -self.height*self.zoom_ratio/2)
-                             # + self.side*np.sin(2*np.deg2rad(self.angle))
+            line.translate( -self.width*self.zoom_ratio/2 + (self.side/2)*np.cos(2*np.deg2rad(self.angle)),
+                            -self.height*self.zoom_ratio/2 + self.side/2)
             line.draw(draw, color = self.fg_color)
         img_out.save("out-" + self.img_name)
         if self.verbose:

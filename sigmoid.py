@@ -81,8 +81,5 @@ class SigmoidPolygon:
                 self.points[i][j] = (self.points[i][j][0] - tx, self.points[i][j][1] - ty)
 
     def draw(self, draw, color: str = "black"):
-        # if len(self.points) == 0:
-        #     self.points.append( self.compute_points() )
-        # print(len(self.points))
         for points in self.points:
             draw.polygon(points, fill = color)
