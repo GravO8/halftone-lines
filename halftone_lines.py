@@ -80,8 +80,8 @@ class HalftoneLines:
         self.fg_color   = fg_color
         self.alpha      = alpha
         self.center     = np.array([self.width//2, self.height//2])
-        self.r          = rotation_matrix(angle)
-        self.angle      = angle
+        self.angle      = angle % 90
+        self.r          = rotation_matrix(self.angle)
         self.kernel_s   = kernel_s
         self.N          = N
         if side is None:
