@@ -45,12 +45,14 @@ def get_args():
     parser.add_argument("-an", "--angle", help = "(optional)- Float that deter"+
     "mines the orientation of the lines in the output image (default is 0, i.e"+
     ". horizontal lines)", type = float, default = 0)
-    parser.add_argument("-v", "--verbose", help = "(optional)- Boolean, prints"+
-    " debugging progress strings when true and prints nothing otherwise (defau"+
-    "lt is true)", type = bool, default = 1)
+    parser.add_argument("-nv", "--no-verbose", help = "(optional)- Disables th"+
+    "e printing of the progress message strings.", action = 'store_false')
     parser.add_argument("-N", "--smoothness", help = "(optional)- Integer, the"+
     " number of points that make up the sigmoid lines. More points give smooth"+
     "er lines. Deault is 5.", type = int, default = 5)
+    parser.add_argument("-nc", "--no_contrast", help = "(optional)- Disables t"+
+    "he application of the CLAHE histogram equalization algorithm that increas"+
+    "es contrast.", default = True)
     return parser.parse_args()
 
 
@@ -64,5 +66,6 @@ if __name__ == "__main__":
                             alpha       = args.alpha,
                             angle       = args.angle,
                             N           = args.smoothness,
-                            verbose     = args.verbose)
+                            verbose     = args.no_verbose,
+                            contrast    = args.no_contrast)
     halftone.halftone()

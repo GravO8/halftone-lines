@@ -70,9 +70,11 @@ def distance(pt1, pt2):
 
 class HalftoneLines:
     def __init__(self, img_name, kernel_s: int, bg_color: tuple, fg_color: tuple, 
-    alpha: float, angle: float, N: int, side: int = None, verbose: bool = True):
+    alpha: float, angle: float, N: int, side: int = None, verbose: bool = True,
+    contrast: bool = True):
         self.img        = cv2.imread(img_name, cv2.IMREAD_GRAYSCALE)
-        self.img        = cv2.createCLAHE(clipLimit = 2.0, tileGridSize = (8,8)).apply(self.img)
+        if contrast:
+            self.img    = cv2.createCLAHE(clipLimit = 2.0, tileGridSize = (8,8)).apply(self.img)
         self.img_name   = img_name
         self.height     = self.img.shape[0]
         self.width      = self.img.shape[1]

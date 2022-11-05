@@ -11,7 +11,7 @@ class StraightLine:
         if np.abs(self.slope) > 1000:
             self.slope = 1000
         self.intercept  = a[1] - self.slope*a[0]
-    def is_parallel(self, line, precision = 1e-5):
+    def is_parallel(self, line, precision = 1e-4):
         return abs(self.slope - line.slope) < precision
     def at(self, x):
         return self.slope*x + self.intercept
