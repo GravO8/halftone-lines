@@ -84,9 +84,9 @@ class HalftoneLines:
         self.center     = np.array([self.width//2, self.height//2])
         self.angle      = angle % 90
         self.r          = rotation_matrix(self.angle)
+        if kernel_s is None:
+            kernel_s = np.ceil(min(self.height, self.width)*0.007)
         self.kernel_s   = kernel_s
-        if side is None:
-            side = np.ceil(min(height,height)*0.007)
         self.side       = side
         self.zoom_ratio = self.side/self.kernel_s
         self.selection  = np.zeros((self.width,self.height), dtype = bool)
@@ -94,6 +94,16 @@ class HalftoneLines:
         self.diagonal1  = StraightLine((0,0),(self.width,self.height)) # descending diagonal
         self.diagonal2  = StraightLine((self.width,0),(0,self.height)) # ascending diagonal
         self.verbose    = verbose
+        if self.verbose:
+            print("Image:", img_name)
+            print("  Kernel:\t{}".format(self.kernel_s))
+            print("  Side:\t\t{}".format(self.side))
+            print("  Angle:\t{}".format(self.angle))
+            print("  Alpha:\t{}".format(self.alpha))
+            print("  Contrast:\t{}".format("yes" if contrast else "no"))
+            print("  Bg color:\t{}".format(self.bg_color))
+            print("  Fg color:\t{}".format(self.fg_color))
+            
     
     def select_kernel(self, vertices):
         '''

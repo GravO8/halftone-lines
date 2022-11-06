@@ -30,9 +30,8 @@ def get_args():
     " of the side of each square that composes the output image (default is 20)"
     , type = int, default = 20)
     parser.add_argument("-k", "--kernel", help = "(optional)- Length (in pixel"+
-    "s) of the side of each square the program will scan from original image ("+
-    "default is 0.7%% of the minimum between the width and height)", type = int,
-    default = 20)
+    "s) of the side of each kernel (default is 0.7%% of the minimum between th"+
+    "e width and height)", type = int, default = None)
     parser.add_argument("-bg", "--bg_color", help = "(optional)- Background co"+
     "lor of the output image in RGB (default is white)", default = "(255,255,2"+
     "55)", type = rgb_color)
@@ -40,16 +39,16 @@ def get_args():
     "circles of the output image in RGB (default is black)", default = "(0,0,0)"
     , type = rgb_color)
     parser.add_argument("-al", "--alpha", help = "(optional)- Float (greater t"+
-    "han 0) that determines how big the circles can be. When alpha is 1, the m"+
-    "aximum radius is side/2 (default is 1.4)", type = float, default = 0)
+    "han 0) that controls the line's thickness (default is 1)", type = float, 
+    default = 1)
     parser.add_argument("-an", "--angle", help = "(optional)- Float that deter"+
-    "mines the orientation of the lines in the output image (default is 0, i.e"+
-    ". horizontal lines)", type = float, default = 0)
+    "mines the orientation of the lines in the output image, in degrees (defau"+
+    "lt is 20)", type = float, default = 20)
     parser.add_argument("-nv", "--no-verbose", help = "(optional)- Disables th"+
-    "e printing of the progress message strings.", action = 'store_false')
+    "e printing of the progress message strings.", action = "store_false")
     parser.add_argument("-nc", "--no_contrast", help = "(optional)- Disables t"+
     "he application of the CLAHE histogram equalization algorithm that increas"+
-    "es contrast.", default = True)
+    "es contrast.", action = "store_false")
     return parser.parse_args()
 
 
@@ -62,7 +61,6 @@ if __name__ == "__main__":
                             fg_color    = str_to_rgb(args.fg_color),
                             alpha       = args.alpha,
                             angle       = args.angle,
-                            N           = args.smoothness,
                             verbose     = args.no_verbose,
                             contrast    = args.no_contrast)
     halftone.halftone()
