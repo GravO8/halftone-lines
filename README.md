@@ -1,5 +1,77 @@
 # Halftone Lines
 
+A python script that levarages the [open cv](https://docs.opencv.org/master/index.html) and [PIL](https://pillow.readthedocs.io/en/stable/) libraries to generate halftone images, with lines.
+
+*(If you like this repo, you may also like [this one](https://github.com/GravO8/halftone))*
+
+
+
+## Command line usage
+
+Put the source image in the same directory as `halftone_lines_cmd.py` and execute the script from the command line, like so:
+
+```
+python3 halftone_lines_cmd.py landscape.jpg
+```
+
+![example](https://user-images.githubusercontent.com/25433159/200199025-ca88002c-585b-4741-8602-48acc8ce5291.png)
+
+You can also learn about the [optional arguments](https://github.com/GravO8/halftone#optional-arguments), doing so:
+
+ ````
+ python3 halftone_lines_cmd.py -h
+ ````
+
+**Warning**: The script takes a long time to execute for large images. Consider resizing the input image so that neither the height nor the width is larger than 1000 pixels.
+
+
+
+## Optional arguments
+
+### Kernel Size
+
+As described in the [algorithm section bellow](#algorithm), the image is scanned with a (squared) kernel in a sliding window fashion. You can control the size of this kernel with the `kernel` optional argument. 
+
+![kernel](https://user-images.githubusercontent.com/25433159/200199320-0f81db35-5159-4423-a6ae-506d0d68ef3c.png)
+
+Larger kernels scan larger chunks of the image at a time, resulting in courser output images. Using smaller kernels results in smoother images but takes longer and produces larger outputs.
+
+### Side
+
+The `side` optional argument controls the size of the lines in the output image.
+
+![side](https://user-images.githubusercontent.com/25433159/200199701-4f382665-3f77-44ad-b4fc-7982535484ae.png)
+
+Larger `side` values produce smoother but also larger output images. Smaller `side` values generate smaller images with interesting textures.
+
+### Alpha
+
+When `alpha = 1`, the maximum width of each line is the `side` value. The `alpha` argument can be used to decrease or increase this maximum width using values less than or larger than 1, respectively. 
+
+![alpha](https://user-images.githubusercontent.com/25433159/200199788-55e55c84-7353-4cb2-9a27-e7dd51a0fee5.png)
+
+### Angle
+
+The `angle` optional parameter controls the angle the image is scanned, which is then reflected on the output image like so:
+
+![angle](https://user-images.githubusercontent.com/25433159/200199914-af443402-3545-4798-aeec-86e2b8061f15.png)
+
+You can specify any angle you want, in degrees. The angle is pushed into the [0, 180[ range (which includes all possible rotation variations) before being applied to the image. 
+
+### Color
+
+The `bg_color` and `fg_color` optional arguments set the background and foreground colors of the output image, respectively.
+
+![color](https://user-images.githubusercontent.com/25433159/200200030-ed2e1679-5cdd-462f-beb1-d080f81e7c84.png)
+
+Darker colors are recommended for the foreground color. If you are calling the program using the command line interface, you have to use `""` or `''` to delimit the rgb value, like so:
+
+ ```
+ python3 halftone_lines_cmd.py landscape.jpg -fg "(255,0,0)"
+ ```
+
+
+
 ## Algorithm
 
 The algorithm is composed of two parts: the scanning and the drawing. In the scanning part, a sliding window kernel computes the mean grey level intensity of every image region it visits. Then, in the drawing part, lines whose thickness varies depending on the intensities previously measured, are drawn.
@@ -61,6 +133,13 @@ Note: The algorithm can be optimized by directly updating the `StraightLine` obj
 While scanning, the position of the different image regions visited and their respective mean grey level intensity are stored in a dictionary, indexed by the region's `y` position (variable `self.canvas_r`). The output image is created by iterating this dictionary as each of its entries corresponds to a line. The lines are created with the `SigmoidPolygon` class that, as the name suggests, creates the polygons that are then actually drawn. The points in this line are added with the `height` method that specifies the thickness (or height) the line should have at a particular position. The smooth thickness variation is implemented with a sigmoid function (see the `make_sigmoid` method). As the lines are drawn tilted (following the kernel's orientation), they must be rotated to match the original orientation by reverting the `angle` degrees rotation and finally, they are translatated to the center of the image.
 
 
+
 ## Original image credits
 
 The photo used in this README is called **Landscape with Mountains and Small Pond** and you can see the original version [here](https://www.pexels.com/photo/landscape-with-mountains-and-small-pond-12365658/). Check out its original photographer [here](https://www.pexels.com/@eberhardgross/).
+
+
+
+## License
+
+This program is licensed under the MIT License - see the [LICENSE](https://github.com/GravO8/halftone-lines/blob/master/LICENSE) file for details.
