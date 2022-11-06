@@ -1,4 +1,4 @@
-import cv2, numpy as np
+import cv2, numpy as np, os
 from PIL import Image, ImageDraw
 from line import StraightLine
 from sigmoid import SigmoidPolygon
@@ -70,8 +70,8 @@ def distance(pt1, pt2):
 
 class HalftoneLines:
     def __init__(self, img_name, kernel_s: int, bg_color: tuple, fg_color: tuple, 
-    alpha: float, angle: float, N: int, side: int = None, verbose: bool = True,
-    contrast: bool = True):
+    alpha: float, angle: float, side: int = None, verbose: bool = True, contrast: bool = True):
+        assert os.path.exists(img_name), "HalftoneLines.__init__: imgae {} not found".format(img_name)
         self.img        = cv2.imread(img_name, cv2.IMREAD_GRAYSCALE)
         if contrast:
             self.img    = cv2.createCLAHE(clipLimit = 2.0, tileGridSize = (8,8)).apply(self.img)
@@ -85,7 +85,6 @@ class HalftoneLines:
         self.angle      = angle % 90
         self.r          = rotation_matrix(self.angle)
         self.kernel_s   = kernel_s
-        self.N          = N
         if side is None:
             side = np.ceil(min(height,height)*0.007)
         self.side       = side
@@ -180,15 +179,12 @@ class HalftoneLines:
                 break
     
     def draw_canvas(self):
-        img_out         = Image.new("RGB", 
-                                    (int(self.width*self.zoom_ratio), 
-                                    int(self.height*self.zoom_ratio)), 
-                                    self.bg_color)
-        draw            = ImageDraw.Draw(img_out)
-        self.canvas_r   = dict(sorted(self.canvas_r.items())) # sorts the dictionary by key, i.e. by y
-        lines           = []
+        img_out = Image.new("RGB", 
+                            (int(self.width*self.zoom_ratio), int(self.height*self.zoom_ratio)), 
+                            self.bg_color)
+        draw    = ImageDraw.Draw(img_out)
         for y in self.canvas_r:
-            line    = SigmoidPolygon(y*self.side, self.side, alpha = self.alpha, N = self.N)
+            line    = SigmoidPolygon(y*self.side, self.side, alpha = self.alpha)
             x       = np.array(self.canvas_r[y]["x"])
             # sort the abscissas and their respective heights
             i_sort  = np.argsort(x)
@@ -197,9 +193,7 @@ class HalftoneLines:
             for i in range(len(x)):
                 line.height(x[i], height[i])
             line.compute_points()
-            line.rotate(self.r)
-            lines.append(line)
-        for line in lines:
+            line.rotate(self.r) # the lines are drawn tilted and must be rotated to match the original orientation
             line.translate( -self.width*self.zoom_ratio/2 + (self.side/2)*np.cos(2*np.deg2rad(self.angle)),
                             -self.height*self.zoom_ratio/2 + self.side/2)
             line.draw(draw, color = self.fg_color)

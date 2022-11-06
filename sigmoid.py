@@ -1,7 +1,7 @@
 import numpy as np
 
 class SigmoidPolygon:
-    def __init__(self, y: int, side: int, alpha: float = 1., N: int = 2):
+    def __init__(self, y: int, side: int, alpha: float = 1., N: int = 10):
         '''
         The SigmoidPolygon class defines the lines that are drawn in the output
         image. These lines have a dynamic width proportional to the grey level 

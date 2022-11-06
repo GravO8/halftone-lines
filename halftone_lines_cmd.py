@@ -47,9 +47,6 @@ def get_args():
     ". horizontal lines)", type = float, default = 0)
     parser.add_argument("-nv", "--no-verbose", help = "(optional)- Disables th"+
     "e printing of the progress message strings.", action = 'store_false')
-    parser.add_argument("-N", "--smoothness", help = "(optional)- Integer, the"+
-    " number of points that make up the sigmoid lines. More points give smooth"+
-    "er lines. Deault is 5.", type = int, default = 5)
     parser.add_argument("-nc", "--no_contrast", help = "(optional)- Disables t"+
     "he application of the CLAHE histogram equalization algorithm that increas"+
     "es contrast.", default = True)
