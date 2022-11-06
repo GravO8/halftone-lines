@@ -82,8 +82,8 @@ class HalftoneLines:
         self.fg_color   = fg_color
         self.alpha      = alpha
         self.center     = np.array([self.width//2, self.height//2])
-        self.angle      = angle
-        self.r          = rotation_matrix(self.angle)
+        self.angle      = ((angle % 180) + 180)%180 # sets every angle within the [0,180[ range
+        self.r          = rotation_matrix(-self.angle)
         if kernel_s is None:
             kernel_s = int(np.ceil(min(self.height, self.width)*0.007))
         self.kernel_s   = kernel_s
@@ -157,7 +157,7 @@ class HalftoneLines:
         vertices_r = self.r.dot(vertices).T + self.center
         for y in range(int(1e10)):
             for x in range(int(1e10)):
-                current = vertices_r + x*h_sign*move_h_r + y*v_sign*move_v_r
+                current                 = vertices_r + x*h_sign*move_h_r + y*v_sign*move_v_r
                 sel, kernel_bottom_line = self.select_kernel(current)
                 if np.any(sel):
                     self.add_to_canvas( h_sign*(0.5 + x),
@@ -166,26 +166,23 @@ class HalftoneLines:
                 else: # the kernel is outside the input image
                     i1 = self.diagonal1.intersection(kernel_bottom_line)
                     i2 = self.diagonal2.intersection(kernel_bottom_line)
+                    # find the closest diagonal intersection with the current row
                     d1 = distance(i1, current[0])
                     d2 = distance(i2, current[0])
-                    # find the closest diagonal intersection with the current row
-                    if d1 < d2:
-                        # if the intersection is out of bonds OR
-                        # is within bounds but can't be reached
-                        # stop the current x iteration loop
-                        if self.out_of_bounds(i1) or (np.sign(i1[0]-current[0][0]) != h_sign*np.sign(move_h_r[0])):
-                            break
-                    else:
-                        if self.out_of_bounds(i2) or (np.sign(i2[0]-current[0][0]) != h_sign*np.sign(move_h_r[0])):
-                            break
+                    i  = i1 if d1 < d2 else i2
+                    v  = i - current[0]
+                    if( self.out_of_bounds(i) or                            # intersection is out of bonds
+                        (np.sign(v[0]) != np.sign(h_sign*move_h_r[0])) or   # is within bounds but can't be reached
+                        (np.sign(v[1]) != np.sign(h_sign*move_h_r[1])) ):
+                        break
             if x == 0: 
-                # python allows to access loop variables outside their block scope
-                # when x is 0, the kernel is in a row where neither the first kernel
-                # position nor any position left/right to it intesects the image
-                # every other row above/bellow this row will be in the same situation
-                # so we can exit the outer y iteration loop
+                # Python allows to access loop variables outside their block scope.
+                # When x is 0, the kernel is in a row where neither the first kernel
+                # position nor any position left/right to it intesects the image.
+                # Every other row above/bellow this row will be in the same situation
+                # so we can exit the outer y iteration loop.
                 # I write "left/right" and "above/bellow" because these directions
-                # depend on the quadrant being scanned
+                # depend on the quadrant being scanned.
                 break
     
     def draw_canvas(self):
@@ -204,8 +201,8 @@ class HalftoneLines:
                 line.height(x[i], height[i])
             line.compute_points()
             line.rotate(self.r) # the lines are drawn tilted and must be rotated to match the original orientation
-            line.translate( -self.width*self.zoom_ratio/2 + (self.side/2)*np.cos(2*np.deg2rad(self.angle)),
-                            -self.height*self.zoom_ratio/2 + self.side/2)
+            line.translate( -self.width*self.zoom_ratio/2 + (self.side/2 if np.abs(self.angle-90) < 0.25 else (self.side/2)*np.cos(np.deg2rad(self.angle))),
+                            -self.height*self.zoom_ratio/2 - (self.side/2)*np.sin(np.deg2rad(self.angle/2)))
             line.draw(draw, color = self.fg_color)
         img_out.save("out-" + self.img_name)
         if self.verbose:
