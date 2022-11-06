@@ -82,10 +82,10 @@ class HalftoneLines:
         self.fg_color   = fg_color
         self.alpha      = alpha
         self.center     = np.array([self.width//2, self.height//2])
-        self.angle      = angle % 90
+        self.angle      = angle
         self.r          = rotation_matrix(self.angle)
         if kernel_s is None:
-            kernel_s = np.ceil(min(self.height, self.width)*0.007)
+            kernel_s = int(np.ceil(min(self.height, self.width)*0.007))
         self.kernel_s   = kernel_s
         self.side       = side
         self.zoom_ratio = self.side/self.kernel_s
@@ -173,10 +173,10 @@ class HalftoneLines:
                         # if the intersection is out of bonds OR
                         # is within bounds but can't be reached
                         # stop the current x iteration loop
-                        if self.out_of_bounds(i1) or (np.sign(i1[0]-current[0][0]) != h_sign):
+                        if self.out_of_bounds(i1) or (np.sign(i1[0]-current[0][0]) != h_sign*np.sign(move_h_r[0])):
                             break
                     else:
-                        if self.out_of_bounds(i2) or (np.sign(i2[0]-current[0][0]) != h_sign):
+                        if self.out_of_bounds(i2) or (np.sign(i2[0]-current[0][0]) != h_sign*np.sign(move_h_r[0])):
                             break
             if x == 0: 
                 # python allows to access loop variables outside their block scope
@@ -213,4 +213,4 @@ class HalftoneLines:
         
     def halftone(self):
         self.scan()
-        self.draw_canvas()
+        self.draw_canvas()  

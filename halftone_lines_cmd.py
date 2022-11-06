@@ -39,8 +39,8 @@ def get_args():
     "circles of the output image in RGB (default is black)", default = "(0,0,0)"
     , type = rgb_color)
     parser.add_argument("-al", "--alpha", help = "(optional)- Float (greater t"+
-    "han 0) that controls the line's thickness (default is 1)", type = float, 
-    default = 1)
+    "han 0) that controls the line's thickness (default is 1.2)", type = float, 
+    default = 1.2)
     parser.add_argument("-an", "--angle", help = "(optional)- Float that deter"+
     "mines the orientation of the lines in the output image, in degrees (defau"+
     "lt is 20)", type = float, default = 20)
