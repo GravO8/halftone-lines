@@ -50,7 +50,10 @@ class SigmoidPolygon:
         '''
         After adding all the points using various calls to the `height` method, 
         the `compute_points` method should be called to interpolate the nice
-        sigmoid polygon between the points 
+        sigmoid polygon between the points. The points decribe the polygon's 
+        outline and their order matters. The left edge is first added, then the
+        upper outline is added, followed by the right edge and finally the 
+        bottom outline.
         '''
         if len(self.top_line) == 0:
             return
@@ -59,12 +62,12 @@ class SigmoidPolygon:
         last_y_top      = self.top_line[-1][1]
         last_y_bottom   = self.bottom_line[-1][1]
         first_x         = self.top_line[0][0]-self.side/2
-        points          = [(first_x,first_y_bottom), (first_x,first_y_top)]
-        for i in range(len(self.top_line)-1):
+        points          = [(first_x,first_y_bottom), (first_x,first_y_top)] # left edge
+        for i in range(len(self.top_line)-1): # upper outline
             points.extend( self.make_sigmoid(self.top_line[i],self.top_line[i+1]) )
         last_x = self.top_line[-1][0]+self.side/2
-        points.extend([(last_x,last_y_top), (last_x,last_y_bottom)])
-        for i in reversed(range(len(self.bottom_line)-1)):
+        points.extend([(last_x,last_y_top), (last_x,last_y_bottom)]) # right edge
+        for i in reversed(range(len(self.bottom_line)-1)): # bottom outline
             points.extend( self.make_sigmoid(self.bottom_line[i],self.bottom_line[i+1])[::-1] )
         self.top_line    = []
         self.bottom_line = []

@@ -58,5 +58,4 @@ Note: The algorithm can be optimized by directly updating the `StraightLine` obj
 
 ## 3. Drawing
 
-While scanning, the position of the different image regions visited and their respective mean grey level intensity are stored in a dictionary, indexed by the region's `y` position (variable `self.canvas_r`).
-
+While scanning, the position of the different image regions visited and their respective mean grey level intensity are stored in a dictionary, indexed by the region's `y` position (variable `self.canvas_r`). The output image is created by iterating this dictionary as each of its entries corresponds to a line. The lines are created with the `SigmoidPolygon` class that, as the name suggests, creates the polygons that are then actually drawn. The points in this line are added with the `height` method that specifies the thickness (or height) the line should have at a particular position. The smooth thickness variation is implemented with a sigmoid function (see the `make_sigmoid` method). As the lines are drawn tilted (following the kernel's orientation), they must be rotated to match the original orientation by reverting the `angle` degrees rotation and finally, they are translatated to the center of the image.
